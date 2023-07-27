@@ -1,0 +1,10 @@
+"db--table--sql: -- -- 
+    select table_schema,concat(round(sum((data_length + index_length)/1024/1024),2),'MB') as data from
+     information_schema.TABLES group by table_schema;
+    "
+TABLE_SCHEMA,data
+ecology,285.38MB
+information_schema,0.00MB
+mysql,8.39MB
+performance_schema,0.00MB
+sys,0.02MB

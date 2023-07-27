@@ -1,0 +1,49 @@
+"db--table--sql: -- -- 
+    select 'database' type,schema_name db,count(*) cnt from information_schema.SCHEMATA  group by db
+     union all
+     select 'table' type,table_schema db,count(*) cnt from information_schema.TABLES a
+            where table_type='BASE TABLE' group by table_schema
+     union all
+     select 'events' type,event_schema db,count(*) cnt from information_schema.EVENTS b
+            group by event_schema
+     union all
+     select 'triggers' type,trigger_schema db,count(*) cnt
+            from information_schema.TRIGGERS c group by trigger_schema
+     union all
+     select 'procedure' type,routine_schema db,count(*) cnt from information_schema.ROUTINES d
+            where routine_type='PROCEDURE' group by db
+     union all
+     select 'function' type,routine_schema db,count(*) cnt from information_schema.ROUTINES e
+            where routine_type='FUNCTION' group by db
+     union all
+     select 'views' type,table_schema db,count(*) cnt
+            from information_schema.views f group by table_schema
+     union all
+     select 'index' type,index_schema db,count(distinct index_name) cnt
+            from information_schema.STATISTICS g group by db
+     union all
+     select 'partition table' type,table_schema db,count(*) cnt from information_schema.PARTITIONS p
+            where partition_name is not null group by db;
+    "
+type,db,cnt
+database,mysql,1
+database,information_schema,1
+database,performance_schema,1
+database,sys,1
+database,ecology,1
+table,ecology,4399
+table,mysql,37
+table,performance_schema,111
+table,sys,1
+triggers,sys,2
+triggers,ecology,487
+procedure,sys,26
+procedure,ecology,2056
+function,sys,22
+function,ecology,27
+views,sys,100
+views,ecology,25
+index,ecology,1603
+index,mysql,6
+index,performance_schema,36
+index,sys,1

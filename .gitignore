@@ -1,0 +1,33 @@
+*.pyc
+logs/*
+docs/tasks/*
+venv
+*/node_modules
+*/.DS_Store
+*/dist
+__pycache__
+.vscode
+.DS_Store
+jdata/*
+excel/*
+node_modules/
+scripts/get_host/get_host.py
+scripts/get_host/__init__.py
+pid_healthcheck_*
+*.lock
+book.pdf
+.idea
+run.sh
+cmdb/
+btree.json*
+
+# 3.0 runner local data
+.runner_id
+server/local.sqlite
+
+# config file
+config-local.yaml
+!config.yaml
+
+# test file
+setup.yaml

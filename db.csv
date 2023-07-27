@@ -1,0 +1,13 @@
+DATA_TYPE,cnt
+varchar,391
+bigint,345
+decimal,182
+longtext,25
+timestamp,25
+enum,12
+text,11
+datetime,6
+time,6
+mediumtext,6
+int,6
+hhhh

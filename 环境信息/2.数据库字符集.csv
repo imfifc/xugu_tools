@@ -1,0 +1,15 @@
+db--table--sql: ecology-- -- show create database ecology;
+Database,Create Database
+ecology,CREATE DATABASE `ecology` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */
+db--table--sql: information_schema-- -- show create database information_schema;
+Database,Create Database
+information_schema,CREATE DATABASE `information_schema` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */
+db--table--sql: mysql-- -- show create database mysql;
+Database,Create Database
+mysql,CREATE DATABASE `mysql` /*!40100 DEFAULT CHARACTER SET utf8mb3 */ /*!80016 DEFAULT ENCRYPTION='N' */
+db--table--sql: performance_schema-- -- show create database performance_schema;
+Database,Create Database
+performance_schema,CREATE DATABASE `performance_schema` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */
+db--table--sql: sys-- -- show create database sys;
+Database,Create Database
+sys,CREATE DATABASE `sys` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */

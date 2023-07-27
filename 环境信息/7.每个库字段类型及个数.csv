@@ -1,0 +1,92 @@
+"db--table--sql: ecology-- -- select data_type, count(*) cnt from information_schema.COLUMNS c
+             where table_schema='ecology' group by data_type order by cnt desc;"
+DATA_TYPE,cnt
+int,20664
+varchar,16790
+char,4673
+text,2434
+decimal,786
+bigint,547
+longtext,412
+datetime,259
+double,172
+tinyint,96
+float,67
+longblob,37
+mediumtext,18
+timestamp,7
+blob,7
+date,4
+smallint,1
+"db--table--sql: information_schema-- -- select data_type, count(*) cnt from information_schema.COLUMNS c
+             where table_schema='information_schema' group by data_type order by cnt desc;"
+DATA_TYPE,cnt
+varchar,339
+bigint,150
+int,104
+binary,26
+enum,19
+char,18
+longtext,13
+datetime,13
+float,9
+json,8
+text,8
+timestamp,7
+set,6
+varbinary,4
+decimal,3
+mediumtext,2
+tinyint,2
+blob,1
+double,1
+"db--table--sql: mysql-- -- select data_type, count(*) cnt from information_schema.COLUMNS c
+             where table_schema='mysql' group by data_type order by cnt desc;"
+DATA_TYPE,cnt
+char,64
+enum,61
+int,38
+text,31
+varchar,26
+bigint,20
+tinyint,13
+timestamp,12
+smallint,6
+float,5
+set,4
+blob,4
+mediumtext,2
+mediumblob,2
+json,2
+time,2
+"db--table--sql: performance_schema-- -- select data_type, count(*) cnt from information_schema.COLUMNS c
+             where table_schema='performance_schema' group by data_type order by cnt desc;"
+DATA_TYPE,cnt
+bigint,934
+varchar,254
+char,76
+enum,62
+timestamp,50
+int,44
+longtext,17
+text,7
+json,4
+double,3
+set,2
+smallint,1
+tinyint,1
+longblob,1
+"db--table--sql: sys-- -- select data_type, count(*) cnt from information_schema.COLUMNS c
+             where table_schema='sys' group by data_type order by cnt desc;"
+DATA_TYPE,cnt
+varchar,391
+bigint,345
+decimal,182
+longtext,25
+timestamp,25
+enum,12
+text,11
+datetime,6
+time,6
+mediumtext,6
+int,6

@@ -1,0 +1,629 @@
+"db--table--sql: -- -- 
+    select
+      o.constraint_schema 约束拥有者,
+      o.constraint_name 约束名称,
+      o.table_schema 表拥有者,
+      o.table_name 表名,
+      o.column_name 列名,
+      o.referenced_table_schema 外键表拥有者,
+      o.referenced_table_name 外键表名,
+      o.referenced_column_name 外键表列名,
+      o.update_rule 约束更新规则,
+      o.delete_rule 约束删除规则,
+      o.unique_constraint_name 唯一约束名称,
+      t.constraint_type 约束类型
+    from
+    (
+      select
+        k.constraint_schema,
+        k.constraint_name,
+        k.table_schema,
+        k.table_name,
+        k.column_name,
+        k.referenced_table_schema,
+        k.referenced_table_name,
+        k.referenced_column_name,
+        r.update_rule,
+        r.delete_rule,
+        r.unique_constraint_name
+      from
+        information_schema.key_column_usage k
+      left join information_schema.referential_constraints r on
+        k.constraint_name = r.constraint_name
+    ) as o
+    inner join information_schema.table_constraints t on
+      o.table_name = t.table_name
+      and t.constraint_name = o.constraint_name
+    where
+      o.constraint_schema != 'mysql' and o.constraint_schema != 'sys';
+    "
+约束拥有者,约束名称,表拥有者,表名,列名,外键表拥有者,外键表名,外键表列名,约束更新规则,约束删除规则,唯一约束名称,约束类型
+performance_schema,PRIMARY,performance_schema,cond_instances,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,error_log,LOGGED,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_current,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_current,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_history,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_history,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,HOST,performance_schema,events_waits_summary_by_host_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_waits_summary_by_host_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_waits_summary_by_instance,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_summary_by_thread_by_event_name,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_waits_summary_by_thread_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,USER,performance_schema,events_waits_summary_by_user_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_waits_summary_by_user_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_waits_summary_by_account_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_waits_summary_by_account_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_waits_summary_by_account_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_waits_summary_global_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,file_instances,FILE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,file_summary_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,file_summary_by_instance,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,host_cache,IP,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,mutex_instances,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,OBJECT,performance_schema,objects_summary_global_by_type,OBJECT_TYPE,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,objects_summary_global_by_type,OBJECT_SCHEMA,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,objects_summary_global_by_type,OBJECT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,processlist,ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,rwlock_instances,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,setup_actors,HOST,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,setup_actors,USER,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,setup_actors,ROLE,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,setup_consumers,NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,setup_instruments,NAME,,,,,,,PRIMARY KEY
+performance_schema,OBJECT,performance_schema,setup_objects,OBJECT_TYPE,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,setup_objects,OBJECT_SCHEMA,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,setup_objects,OBJECT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,setup_threads,NAME,,,,,,,PRIMARY KEY
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_index_usage,OBJECT_TYPE,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_index_usage,OBJECT_SCHEMA,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_index_usage,OBJECT_NAME,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_index_usage,INDEX_NAME,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_table,OBJECT_TYPE,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_table,OBJECT_SCHEMA,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_io_waits_summary_by_table,OBJECT_NAME,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_lock_waits_summary_by_table,OBJECT_TYPE,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_lock_waits_summary_by_table,OBJECT_SCHEMA,,,,,,,UNIQUE
+performance_schema,OBJECT,performance_schema,table_lock_waits_summary_by_table,OBJECT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,threads,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_current,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_current,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_history,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_history,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_summary_by_thread_by_event_name,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_stages_summary_by_thread_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,ACCOUNT,performance_schema,events_stages_summary_by_account_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_stages_summary_by_account_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_stages_summary_by_account_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_stages_summary_by_user_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_stages_summary_by_user_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_stages_summary_by_host_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_stages_summary_by_host_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_stages_summary_global_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_current,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_current,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_history,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_history,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_summary_by_thread_by_event_name,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_summary_by_thread_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,ACCOUNT,performance_schema,events_statements_summary_by_account_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_statements_summary_by_account_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_statements_summary_by_account_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_statements_summary_by_user_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_statements_summary_by_user_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_statements_summary_by_host_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_statements_summary_by_host_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_statements_summary_global_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,SCHEMA_NAME,performance_schema,events_statements_summary_by_digest,SCHEMA_NAME,,,,,,,UNIQUE
+performance_schema,SCHEMA_NAME,performance_schema,events_statements_summary_by_digest,DIGEST,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_statements_summary_by_program,OBJECT_TYPE,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_summary_by_program,OBJECT_SCHEMA,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_summary_by_program,OBJECT_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_statements_histogram_global,BUCKET_NUMBER,,,,,,,PRIMARY KEY
+performance_schema,SCHEMA_NAME,performance_schema,events_statements_histogram_by_digest,SCHEMA_NAME,,,,,,,UNIQUE
+performance_schema,SCHEMA_NAME,performance_schema,events_statements_histogram_by_digest,DIGEST,,,,,,,UNIQUE
+performance_schema,SCHEMA_NAME,performance_schema,events_statements_histogram_by_digest,BUCKET_NUMBER,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_transactions_current,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_transactions_current,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_transactions_history,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_transactions_history,EVENT_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_transactions_summary_by_thread_by_event_name,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,events_transactions_summary_by_thread_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,ACCOUNT,performance_schema,events_transactions_summary_by_account_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_transactions_summary_by_account_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_transactions_summary_by_account_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_transactions_summary_by_user_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_transactions_summary_by_user_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_transactions_summary_by_host_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_transactions_summary_by_host_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,events_transactions_summary_global_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,USER,performance_schema,events_errors_summary_by_user_by_error,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,events_errors_summary_by_user_by_error,ERROR_NUMBER,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_errors_summary_by_host_by_error,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,events_errors_summary_by_host_by_error,ERROR_NUMBER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_errors_summary_by_account_by_error,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_errors_summary_by_account_by_error,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,events_errors_summary_by_account_by_error,ERROR_NUMBER,,,,,,,UNIQUE
+performance_schema,THREAD_ID,performance_schema,events_errors_summary_by_thread_by_error,THREAD_ID,,,,,,,UNIQUE
+performance_schema,THREAD_ID,performance_schema,events_errors_summary_by_thread_by_error,ERROR_NUMBER,,,,,,,UNIQUE
+performance_schema,ERROR_NUMBER,performance_schema,events_errors_summary_global_by_error,ERROR_NUMBER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,users,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,accounts,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,accounts,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,hosts,HOST,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,socket_instances,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,socket_summary_by_instance,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,socket_summary_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_connect_attrs,PROCESSLIST_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_connect_attrs,ATTR_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_account_connect_attrs,PROCESSLIST_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_account_connect_attrs,ATTR_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,memory_summary_global_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,ACCOUNT,performance_schema,memory_summary_by_account_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,memory_summary_by_account_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,memory_summary_by_account_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,memory_summary_by_host_by_event_name,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,memory_summary_by_host_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,memory_summary_by_thread_by_event_name,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,memory_summary_by_thread_by_event_name,EVENT_NAME,,,,,,,PRIMARY KEY
+performance_schema,USER,performance_schema,memory_summary_by_user_by_event_name,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,memory_summary_by_user_by_event_name,EVENT_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,table_handles,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,metadata_locks,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,data_locks,ENGINE,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,data_locks,ENGINE_LOCK_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_connection_configuration,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_connection_status,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_applier_configuration,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_applier_status,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_applier_status_by_coordinator,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_applier_status_by_worker,CHANNEL_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,replication_applier_status_by_worker,WORKER_ID,,,,,,,PRIMARY KEY
+performance_schema,OWNER_THREAD_ID,performance_schema,prepared_statements_instances,OWNER_THREAD_ID,,,,,,,UNIQUE
+performance_schema,OWNER_THREAD_ID,performance_schema,prepared_statements_instances,OWNER_EVENT_ID,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,prepared_statements_instances,OBJECT_INSTANCE_BEGIN,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,user_variables_by_thread,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,user_variables_by_thread,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,ACCOUNT,performance_schema,status_by_account,USER,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,status_by_account,HOST,,,,,,,UNIQUE
+performance_schema,ACCOUNT,performance_schema,status_by_account,VARIABLE_NAME,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,status_by_host,HOST,,,,,,,UNIQUE
+performance_schema,HOST,performance_schema,status_by_host,VARIABLE_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,status_by_thread,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,status_by_thread,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,USER,performance_schema,status_by_user,USER,,,,,,,UNIQUE
+performance_schema,USER,performance_schema,status_by_user,VARIABLE_NAME,,,,,,,UNIQUE
+performance_schema,PRIMARY,performance_schema,global_status,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_status,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,variables_by_thread,THREAD_ID,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,variables_by_thread,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,global_variables,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,session_variables,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,persisted_variables,VARIABLE_NAME,,,,,,,PRIMARY KEY
+performance_schema,PRIMARY,performance_schema,user_defined_functions,UDF_NAME,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,actor,actor_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,address,address_id,,,,,,,PRIMARY KEY
+sakila,fk_address_city,sakila,address,city_id,sakila,city,city_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,category,category_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,city,city_id,,,,,,,PRIMARY KEY
+world,PRIMARY,world,city,ID,,,,,,,PRIMARY KEY
+sakila,fk_city_country,sakila,city,country_id,sakila,country,country_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,country,country_id,,,,,,,PRIMARY KEY
+world,PRIMARY,world,country,Code,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,customer,customer_id,,,,,,,PRIMARY KEY
+sakila,fk_customer_address,sakila,customer,address_id,sakila,address,address_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_customer_store,sakila,customer,store_id,sakila,store,store_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,film,film_id,,,,,,,PRIMARY KEY
+sakila,fk_film_language,sakila,film,language_id,sakila,language,language_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_film_language_original,sakila,film,original_language_id,sakila,language,language_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,film_actor,actor_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,film_actor,film_id,,,,,,,PRIMARY KEY
+sakila,fk_film_actor_actor,sakila,film_actor,actor_id,sakila,actor,actor_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_film_actor_film,sakila,film_actor,film_id,sakila,film,film_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,film_category,film_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,film_category,category_id,,,,,,,PRIMARY KEY
+sakila,fk_film_category_category,sakila,film_category,category_id,sakila,category,category_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_film_category_film,sakila,film_category,film_id,sakila,film,film_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,film_text,film_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,inventory,inventory_id,,,,,,,PRIMARY KEY
+sakila,fk_inventory_film,sakila,inventory,film_id,sakila,film,film_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_inventory_store,sakila,inventory,store_id,sakila,store,store_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,language,language_id,,,,,,,PRIMARY KEY
+sakila,PRIMARY,sakila,payment,payment_id,,,,,,,PRIMARY KEY
+sakila,fk_payment_customer,sakila,payment,customer_id,sakila,customer,customer_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_payment_rental,sakila,payment,rental_id,sakila,rental,rental_id,CASCADE,SET NULL,PRIMARY,FOREIGN KEY
+sakila,fk_payment_staff,sakila,payment,staff_id,sakila,staff,staff_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,rental,rental_id,,,,,,,PRIMARY KEY
+sakila,rental_date,sakila,rental,rental_date,,,,,,,UNIQUE
+sakila,rental_date,sakila,rental,inventory_id,,,,,,,UNIQUE
+sakila,rental_date,sakila,rental,customer_id,,,,,,,UNIQUE
+sakila,fk_rental_customer,sakila,rental,customer_id,sakila,customer,customer_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_rental_inventory,sakila,rental,inventory_id,sakila,inventory,inventory_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_rental_staff,sakila,rental,staff_id,sakila,staff,staff_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,staff,staff_id,,,,,,,PRIMARY KEY
+sakila,fk_staff_address,sakila,staff,address_id,sakila,address,address_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_staff_store,sakila,staff,store_id,sakila,store,store_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,idx_unique_manager,sakila,store,manager_staff_id,,,,,,,UNIQUE
+sakila,PRIMARY,sakila,store,store_id,,,,,,,PRIMARY KEY
+sakila,fk_store_address,sakila,store,address_id,sakila,address,address_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,fk_store_staff,sakila,store,manager_staff_id,sakila,staff,staff_id,CASCADE,RESTRICT,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,city,city_id,,,,,,,PRIMARY KEY
+world,PRIMARY,world,city,ID,,,,,,,PRIMARY KEY
+world,city_ibfk_1,world,city,CountryCode,world,country,Code,NO ACTION,NO ACTION,PRIMARY,FOREIGN KEY
+sakila,PRIMARY,sakila,country,country_id,,,,,,,PRIMARY KEY
+world,PRIMARY,world,country,Code,,,,,,,PRIMARY KEY
+world,PRIMARY,world,countrylanguage,CountryCode,,,,,,,PRIMARY KEY
+world,PRIMARY,world,countrylanguage,Language,,,,,,,PRIMARY KEY
+world,countryLanguage_ibfk_1,world,countrylanguage,CountryCode,world,country,Code,NO ACTION,NO ACTION,PRIMARY,FOREIGN KEY
+kittenchat,account_anchoraccount_uid_9f2da42a_uniq,kittenchat,account_anchoraccount,uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_anchoraccount,id,,,,,,,PRIMARY KEY
+kittenchat,username,kittenchat,account_anchoraccount,username,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_anchoractivityrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_anchorbanner,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_anchordiamondrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_anchorlevelhistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_anchorlevelhistoryv2,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_anchorlevels,id,,,,,,,PRIMARY KEY
+kittenchat,account_anchorlevels_user_id_e83ac79f_fk_account_a,kittenchat,account_anchorlevels,user_id,kittenchat,account_anchoraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_answer024,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_booksnote,id,,,,,,,PRIMARY KEY
+kittenchat,account_booksnote_cooperator_id_294b9b2c_fk_account_u,kittenchat,account_booksnote,cooperator_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_booksnote_user_id_d1066edc_fk_account_useraccount_id,kittenchat,account_booksnote,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_catinfo,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_chatroom,id,,,,,,,PRIMARY KEY
+kittenchat,account_chatroom_start_user_id_92714173_fk_account_u,kittenchat,account_chatroom,start_user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_chatroom_partici_chatroom_id_useraccount__f897081b_uniq,kittenchat,account_chatroom_participant,chatroom_id,,,,,,,UNIQUE
+kittenchat,account_chatroom_partici_chatroom_id_useraccount__f897081b_uniq,kittenchat,account_chatroom_participant,useraccount_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_chatroom_participant,id,,,,,,,PRIMARY KEY
+kittenchat,account_chatroom_par_chatroom_id_474cc934_fk_account_c,kittenchat,account_chatroom_participant,chatroom_id,kittenchat,account_chatroom,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_chatroom_par_useraccount_id_4d93a091_fk_account_u,kittenchat,account_chatroom_participant,useraccount_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_clientusercoinspentrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_cloakrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_f012information,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_f012informationcomment,id,,,,,,,PRIMARY KEY
+kittenchat,account_f012informat_information_id_2cb6904f_fk_account_f,kittenchat,account_f012informationcomment,information_id,kittenchat,account_f012information,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_f012informat_user_id_890ea77c_fk_account_u,kittenchat,account_f012informationcomment,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_invcoderecord,id,,,,,,,PRIMARY KEY
+kittenchat,use_code,kittenchat,account_invcoderecord,use_code,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_matchanchorrecord,id,,,,,,,PRIMARY KEY
+kittenchat,account_matchanchorr_anchor_id_b9d10e79_fk_account_a,kittenchat,account_matchanchorrecord,anchor_id,kittenchat,account_anchoraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_matchanchorr_user_id_b2cddd3f_fk_account_u,kittenchat,account_matchanchorrecord,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_matchcommunitymodel,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_notepost,id,,,,,,,PRIMARY KEY
+kittenchat,account_notepost_books_note_id_f25e59e8_fk_account_booksnote_id,kittenchat,account_notepost,books_note_id,kittenchat,account_booksnote,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_notepost_user_id_45e0ee97_fk_account_useraccount_id,kittenchat,account_notepost,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_pkgpathmap,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_question024,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_roomavatar,id,,,,,,,PRIMARY KEY
+kittenchat,account_roomavatar_by_room_id_b9e1fd8b_fk_account_chatroom_id,kittenchat,account_roomavatar,by_room_id,kittenchat,account_chatroom,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_roomavatar_user_id_36843724_fk_account_useraccount_id,kittenchat,account_roomavatar,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_subject023,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_subject035,id,,,,,,,PRIMARY KEY
+kittenchat,account_useraccount_uid_c39c6b8c_uniq,kittenchat,account_useraccount,uid,,,,,,,UNIQUE
+kittenchat,apple_id,kittenchat,account_useraccount,apple_id,,,,,,,UNIQUE
+kittenchat,dev_id,kittenchat,account_useraccount,dev_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_useraccount,id,,,,,,,PRIMARY KEY
+kittenchat,account_useraccount_sort_tag_id_0b1ddb84_fk_account_usersort_id,kittenchat,account_useraccount,sort_tag_id,kittenchat,account_usersort,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_useraccounttag,id,,,,,,,PRIMARY KEY
+kittenchat,account_useraccountt_ab_test_id_26a4780d_fk_opconf_fu,kittenchat,account_useraccounttag,ab_test_id,kittenchat,opconf_funcabtest,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,account_useraccountt_user_id_aae7e64c_fk_account_u,kittenchat,account_useraccounttag,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_usercomment,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_userdynamics,id,,,,,,,PRIMARY KEY
+kittenchat,account_userdynamics_user_id_a872111e_fk_account_useraccount_id,kittenchat,account_userdynamics,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_userflashmob,id,,,,,,,PRIMARY KEY
+kittenchat,account_userflashmob_user_id_375d733f_fk_account_useraccount_id,kittenchat,account_userflashmob,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,account_usergroup,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_userlike,id,,,,,,,PRIMARY KEY
+kittenchat,account_usermatchhistory_user_matched_2fff36cb_uniq,kittenchat,account_usermatchhistory,user,,,,,,,UNIQUE
+kittenchat,account_usermatchhistory_user_matched_2fff36cb_uniq,kittenchat,account_usermatchhistory,matched,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_usermatchhistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_usermatchrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_userpuzzleinfo,id,,,,,,,PRIMARY KEY
+kittenchat,uid,kittenchat,account_userpuzzleinfo,uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,account_userrelation,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_userrewardhistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_usersignin,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,account_usersort,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_anchorimpressionrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_anchorimpressiontag,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_anchorwithdraw,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_audiochannelcover,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_audiochannelrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_audiohistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_callevaluation,id,,,,,,,PRIMARY KEY
+kittenchat,agora_callevaluation_cho_callevaluation_id_callev_37bdfe2c_uniq,kittenchat,agora_callevaluation_choice_reason,callevaluation_id,,,,,,,UNIQUE
+kittenchat,agora_callevaluation_cho_callevaluation_id_callev_37bdfe2c_uniq,kittenchat,agora_callevaluation_choice_reason,callevaluationtag_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,agora_callevaluation_choice_reason,id,,,,,,,PRIMARY KEY
+kittenchat,agora_callevaluation_callevaluationtag_id_c6a7c5d8_fk_agora_cal,kittenchat,agora_callevaluation_choice_reason,callevaluationtag_id,kittenchat,agora_callevaluationtag,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,agora_callevaluation_callevaluation_id_95db25c5_fk_agora_cal,kittenchat,agora_callevaluation_choice_reason,callevaluation_id,kittenchat,agora_callevaluation,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,agora_callevaluationtag,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_channelhistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_gift,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_gifthistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,agora_liveaudit,id,,,,,,,PRIMARY KEY
+idc,name,idc,auth_group,name,,,,,,,UNIQUE
+kittenchat,name,kittenchat,auth_group,name,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_group,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_group,id,,,,,,,PRIMARY KEY
+idc,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,idc,auth_group_permissions,group_id,,,,,,,UNIQUE
+idc,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,idc,auth_group_permissions,permission_id,,,,,,,UNIQUE
+kittenchat,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,kittenchat,auth_group_permissions,group_id,,,,,,,UNIQUE
+kittenchat,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,kittenchat,auth_group_permissions,permission_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_group_permissions,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_group_permissions,id,,,,,,,PRIMARY KEY
+idc,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,idc,auth_group_permissions,group_id,idc,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,idc,auth_group_permissions,group_id,idc,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,kittenchat,auth_group_permissions,group_id,kittenchat,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,kittenchat,auth_group_permissions,group_id,kittenchat,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,idc,auth_group_permissions,permission_id,idc,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,idc,auth_group_permissions,permission_id,idc,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,kittenchat,auth_group_permissions,permission_id,kittenchat,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,kittenchat,auth_group_permissions,permission_id,kittenchat,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_permission_content_type_id_codename_01ab375a_uniq,idc,auth_permission,content_type_id,,,,,,,UNIQUE
+idc,auth_permission_content_type_id_codename_01ab375a_uniq,idc,auth_permission,codename,,,,,,,UNIQUE
+kittenchat,auth_permission_content_type_id_codename_01ab375a_uniq,kittenchat,auth_permission,content_type_id,,,,,,,UNIQUE
+kittenchat,auth_permission_content_type_id_codename_01ab375a_uniq,kittenchat,auth_permission,codename,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_permission,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_permission,id,,,,,,,PRIMARY KEY
+idc,auth_permission_content_type_id_2f476e4b_fk_django_co,idc,auth_permission,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_permission_content_type_id_2f476e4b_fk_django_co,idc,auth_permission,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_permission_content_type_id_2f476e4b_fk_django_co,kittenchat,auth_permission,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_permission_content_type_id_2f476e4b_fk_django_co,kittenchat,auth_permission,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,auth_user,id,,,,,,,PRIMARY KEY
+kittenchat,username,kittenchat,auth_user,username,,,,,,,UNIQUE
+kittenchat,auth_user_groups_user_id_group_id_94350c0c_uniq,kittenchat,auth_user_groups,user_id,,,,,,,UNIQUE
+kittenchat,auth_user_groups_user_id_group_id_94350c0c_uniq,kittenchat,auth_user_groups,group_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,auth_user_groups,id,,,,,,,PRIMARY KEY
+kittenchat,auth_user_groups_group_id_97559544_fk_auth_group_id,kittenchat,auth_user_groups,group_id,kittenchat,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_user_groups_user_id_6a12ed8b_fk_auth_user_id,kittenchat,auth_user_groups,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_user_user_permissions_user_id_permission_id_14a6b632_uniq,kittenchat,auth_user_user_permissions,user_id,,,,,,,UNIQUE
+kittenchat,auth_user_user_permissions_user_id_permission_id_14a6b632_uniq,kittenchat,auth_user_user_permissions,permission_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,auth_user_user_permissions,id,,,,,,,PRIMARY KEY
+kittenchat,auth_user_user_permissions_user_id_a95ead1b_fk_auth_user_id,kittenchat,auth_user_user_permissions,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_user_user_permi_permission_id_1fbb5f2c_fk_auth_perm,kittenchat,auth_user_user_permissions,permission_id,kittenchat,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,blacklist_anchorblacklist,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,blacklist_userblacklist,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,dayu_dayucharge,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,dayu_dayuregister,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_admin_log,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_admin_log,id,,,,,,,PRIMARY KEY
+idc,django_admin_log_content_type_id_c4bce8eb_fk_django_co,idc,django_admin_log,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,django_admin_log_content_type_id_c4bce8eb_fk_django_co,idc,django_admin_log,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,django_admin_log_content_type_id_c4bce8eb_fk_django_co,kittenchat,django_admin_log,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,django_admin_log_content_type_id_c4bce8eb_fk_django_co,kittenchat,django_admin_log,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,django_admin_log_user_id_c564eba6_fk_auth_user_id,kittenchat,django_admin_log,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,django_content_type_app_label_model_76bd3d3b_uniq,idc,django_content_type,app_label,,,,,,,UNIQUE
+idc,django_content_type_app_label_model_76bd3d3b_uniq,idc,django_content_type,model,,,,,,,UNIQUE
+kittenchat,django_content_type_app_label_model_76bd3d3b_uniq,kittenchat,django_content_type,app_label,,,,,,,UNIQUE
+kittenchat,django_content_type_app_label_model_76bd3d3b_uniq,kittenchat,django_content_type,model,,,,,,,UNIQUE
+idc,PRIMARY,idc,django_content_type,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_content_type,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_migrations,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_migrations,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_session,session_key,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_session,session_key,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_concentrationrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_dogrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_minesweeperrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_scriptrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_scriptroom,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,games_scriptroomreport,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,guild_guild,id,,,,,,,PRIMARY KEY
+kittenchat,username,kittenchat,guild_guild,username,,,,,,,UNIQUE
+kittenchat,mediafile_anchormediafile_record_35256bd1_uniq,kittenchat,mediafile_anchormediafile,record,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,mediafile_anchormediafile,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_anchormedi_user_id_451525cd_fk_account_a,kittenchat,mediafile_anchormediafile,user_id,kittenchat,account_anchoraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_anchorreviewhistory_record_17605a09_uniq,kittenchat,mediafile_anchorreviewhistory,record,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,mediafile_anchorreviewhistory,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_anchorrevi_user_id_879eb9ed_fk_account_a,kittenchat,mediafile_anchorreviewhistory,user_id,kittenchat,account_anchoraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,mediafile_dynamicsresource,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_dynamicsre_dynamics_id_97e3778f_fk_account_u,kittenchat,mediafile_dynamicsresource,dynamics_id,kittenchat,account_userdynamics,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,mediafile_matchvideorecord,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_matchvideo_user_id_b0d9209a_fk_account_u,kittenchat,mediafile_matchvideorecord,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_matchvideo_video_id_45d96721_fk_mediafile,kittenchat,mediafile_matchvideorecord,video_id,kittenchat,mediafile_anchormediafile,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,mediafile_testquestion,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,mediafile_userdynamictopicrecord,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_usermediafile_record_a26e3b28_uniq,kittenchat,mediafile_usermediafile,record,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,mediafile_usermediafile,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_usermediaf_user_id_9ceb70d0_fk_account_u,kittenchat,mediafile_usermediafile,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_userquestionrecord_user_id_question_id_8a75cd0e_uniq,kittenchat,mediafile_userquestionrecord,question_id,,,,,,,UNIQUE
+kittenchat,mediafile_userquestionrecord_user_id_question_id_8a75cd0e_uniq,kittenchat,mediafile_userquestionrecord,user_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,mediafile_userquestionrecord,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_userquesti_question_id_7b02920b_fk_mediafile,kittenchat,mediafile_userquestionrecord,question_id,kittenchat,mediafile_testquestion,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_userquesti_user_id_4c280898_fk_account_u,kittenchat,mediafile_userquestionrecord,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_userreviewhistory_record_07150f5c_uniq,kittenchat,mediafile_userreviewhistory,record,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,mediafile_userreviewhistory,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_userreview_user_id_4f7e7242_fk_account_u,kittenchat,mediafile_userreviewhistory,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,mediafile_usertopic,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,mediafile_usertopicdynamicbanner,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,mediafile_uservoice,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_uservoice_user_id_d8929c08_fk_account_useraccount_id,kittenchat,mediafile_uservoice,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,mediafile_videodynamic,id,,,,,,,PRIMARY KEY
+kittenchat,mediafile_videodynam_user_id_b200df3f_fk_account_u,kittenchat,mediafile_videodynamic,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,mediafile_videodynam_video_id_2300b981_fk_mediafile,kittenchat,mediafile_videodynamic,video_id,kittenchat,mediafile_anchormediafile,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_anchorshortvideo,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_anchorshortvideo_pkg_id_396d9bf0_fk_opconf_pkginfo_id,kittenchat,opconf_anchorshortvideo,pkg_id,kittenchat,opconf_pkginfo,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_cameracchargeconfig,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_cameracchargeconfig_pkg_id_c3390595_fk_opconf_pkginfo_id,kittenchat,opconf_cameracchargeconfig,pkg_id,kittenchat,opconf_pkginfo,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_citymodel,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_citymodel_country_id_6d38fa41_fk_opconf_country_id,kittenchat,opconf_citymodel,country_id,kittenchat,opconf_country,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,code,kittenchat,opconf_country,code,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_country,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,opconf_funcabtest,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_funcabtest_pkg_id_54d3f0cd_fk_opconf_pkginfo_id,kittenchat,opconf_funcabtest,pkg_id,kittenchat,opconf_pkginfo,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_funcabtest_country_funcabtest_id_country_id_1784d70c_uniq,kittenchat,opconf_funcabtest_country,funcabtest_id,,,,,,,UNIQUE
+kittenchat,opconf_funcabtest_country_funcabtest_id_country_id_1784d70c_uniq,kittenchat,opconf_funcabtest_country,country_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_funcabtest_country,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_funcabtest_co_country_id_4a8b8c75_fk_opconf_co,kittenchat,opconf_funcabtest_country,country_id,kittenchat,opconf_country,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_funcabtest_co_funcabtest_id_ffee7edf_fk_opconf_fu,kittenchat,opconf_funcabtest_country,funcabtest_id,kittenchat,opconf_funcabtest,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,code,kittenchat,opconf_functionswitch,code,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_functionswitch,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_functionswitch_pk_functionswitch_id_packag_6c002722_uniq,kittenchat,opconf_functionswitch_pkgs,functionswitch_id,,,,,,,UNIQUE
+kittenchat,opconf_functionswitch_pk_functionswitch_id_packag_6c002722_uniq,kittenchat,opconf_functionswitch_pkgs,packagesmodel_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_functionswitch_pkgs,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_functionswitc_functionswitch_id_8ae0460f_fk_opconf_fu,kittenchat,opconf_functionswitch_pkgs,functionswitch_id,kittenchat,opconf_functionswitch,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_functionswitc_packagesmodel_id_1beced86_fk_opconf_pa,kittenchat,opconf_functionswitch_pkgs,packagesmodel_id,kittenchat,opconf_packagesmodel,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_ipwhitelist,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_packagesmodel_package_version_e5b37f11_uniq,kittenchat,opconf_packagesmodel,package,,,,,,,UNIQUE
+kittenchat,opconf_packagesmodel_package_version_e5b37f11_uniq,kittenchat,opconf_packagesmodel,version,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_packagesmodel,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,opconf_pkgdefaultmediaconfig,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_pkgdefaultmed_pkg_id_e800b934_fk_opconf_pk,kittenchat,opconf_pkgdefaultmediaconfig,pkg_id,kittenchat,opconf_pkginfo,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_pkginfo,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,opconf_redirectuser,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_redirectuser_pkg_id_17ec2acc_fk_opconf_packagesmodel_id,kittenchat,opconf_redirectuser,pkg_id,kittenchat,opconf_packagesmodel,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_redirectuser_user_redirectuser_id_country__091fad62_uniq,kittenchat,opconf_redirectuser_user_country,redirectuser_id,,,,,,,UNIQUE
+kittenchat,opconf_redirectuser_user_redirectuser_id_country__091fad62_uniq,kittenchat,opconf_redirectuser_user_country,country_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_redirectuser_user_country,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_redirectuser__country_id_ae193557_fk_opconf_co,kittenchat,opconf_redirectuser_user_country,country_id,kittenchat,opconf_country,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_redirectuser__redirectuser_id_8817b7bb_fk_opconf_re,kittenchat,opconf_redirectuser_user_country,redirectuser_id,kittenchat,opconf_redirectuser,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,opconf_settingsmodel,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_settingsmodel_cou_settingsmodel_id_country_46ff84fd_uniq,kittenchat,opconf_settingsmodel_countries,settingsmodel_id,,,,,,,UNIQUE
+kittenchat,opconf_settingsmodel_cou_settingsmodel_id_country_46ff84fd_uniq,kittenchat,opconf_settingsmodel_countries,country_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_settingsmodel_countries,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_settingsmodel_country_id_ec5cd058_fk_opconf_co,kittenchat,opconf_settingsmodel_countries,country_id,kittenchat,opconf_country,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_settingsmodel_settingsmodel_id_1db97111_fk_opconf_se,kittenchat,opconf_settingsmodel_countries,settingsmodel_id,kittenchat,opconf_settingsmodel,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_settingsmodel_pkg_settingsmodel_id_package_7e6be043_uniq,kittenchat,opconf_settingsmodel_pkgs,settingsmodel_id,,,,,,,UNIQUE
+kittenchat,opconf_settingsmodel_pkg_settingsmodel_id_package_7e6be043_uniq,kittenchat,opconf_settingsmodel_pkgs,packagesmodel_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,opconf_settingsmodel_pkgs,id,,,,,,,PRIMARY KEY
+kittenchat,opconf_settingsmodel_packagesmodel_id_96f2d3a8_fk_opconf_pa,kittenchat,opconf_settingsmodel_pkgs,packagesmodel_id,kittenchat,opconf_packagesmodel,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,opconf_settingsmodel_settingsmodel_id_ada0c10f_fk_opconf_se,kittenchat,opconf_settingsmodel_pkgs,settingsmodel_id,kittenchat,opconf_settingsmodel,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,payments_activitylocation,id,,,,,,,PRIMARY KEY
+kittenchat,value,kittenchat,payments_activitylocation,value,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_activitytype,id,,,,,,,PRIMARY KEY
+kittenchat,value,kittenchat,payments_activitytype,value,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_billing,id,,,,,,,PRIMARY KEY
+kittenchat,transaction_id,kittenchat,payments_billing,transaction_id,,,,,,,UNIQUE
+kittenchat,payments_billing_user_id_dbdc0472_fk_account_useraccount_id,kittenchat,payments_billing,user_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,order_no,kittenchat,payments_billingv2,order_no,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_billingv2,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,payments_goodsactivity,id,,,,,,,PRIMARY KEY
+kittenchat,uid,kittenchat,payments_goodsactivity,uid,,,,,,,UNIQUE
+kittenchat,payments_goodsactivi_at_type_v2_id_7f8c0313_fk_payments_,kittenchat,payments_goodsactivity,at_type_v2_id,kittenchat,payments_activitytype,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,payments_goodsactivi_goods_id_cff0db0c_fk_payments_,kittenchat,payments_goodsactivity,goods_id,kittenchat,payments_goodsconfig,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,payments_goodsactivity_a_goodsactivity_id_activit_a819a31d_uniq,kittenchat,payments_goodsactivity_at_location,goodsactivity_id,,,,,,,UNIQUE
+kittenchat,payments_goodsactivity_a_goodsactivity_id_activit_a819a31d_uniq,kittenchat,payments_goodsactivity_at_location,activitylocation_id,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_goodsactivity_at_location,id,,,,,,,PRIMARY KEY
+kittenchat,payments_goodsactivi_activitylocation_id_0555b3af_fk_payments_,kittenchat,payments_goodsactivity_at_location,activitylocation_id,kittenchat,payments_activitylocation,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,payments_goodsactivi_goodsactivity_id_da7416f8_fk_payments_,kittenchat,payments_goodsactivity_at_location,goodsactivity_id,kittenchat,payments_goodsactivity,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,goods_uid,kittenchat,payments_goodsconfig,goods_uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_goodsconfig,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,payments_goodslist,id,,,,,,,PRIMARY KEY
+kittenchat,uid,kittenchat,payments_goodslist,uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_goodstemplate,id,,,,,,,PRIMARY KEY
+kittenchat,uid,kittenchat,payments_goodstemplate,uid,,,,,,,UNIQUE
+kittenchat,payments_pkgtemplateconfig_pkg_template_uid_b5cd5bfb_uniq,kittenchat,payments_pkgtemplateconfig,pkg,,,,,,,UNIQUE
+kittenchat,payments_pkgtemplateconfig_pkg_template_uid_b5cd5bfb_uniq,kittenchat,payments_pkgtemplateconfig,template_uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_pkgtemplateconfig,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,payments_pricingconfig,id,,,,,,,PRIMARY KEY
+kittenchat,uid,kittenchat,payments_pricingconfig,uid,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,payments_userconsumptionrecord,id,,,,,,,PRIMARY KEY
+kittenchat,payments_userconsump_uid_id_82d1fd74_fk_account_u,kittenchat,payments_userconsumptionrecord,uid_id,kittenchat,account_useraccount,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,report_commonreportrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_datarecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_feedbackattach,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_feedbackrecord,id,,,,,,,PRIMARY KEY
+kittenchat,record,kittenchat,report_feedbackrecord,record,,,,,,,UNIQUE
+kittenchat,PRIMARY,kittenchat,report_houractiverecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_reportdynamicsrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_reportrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_userfeedbackrecord,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,report_userfeedbackrecord_tags,id,,,,,,,PRIMARY KEY
+kittenchat,report_userfeedbackrecor_userfeedbackrecord_id_us_77aa2515_uniq,kittenchat,report_userfeedbackrecord_tags,userfeedbackrecord_id,,,,,,,UNIQUE
+kittenchat,report_userfeedbackrecor_userfeedbackrecord_id_us_77aa2515_uniq,kittenchat,report_userfeedbackrecord_tags,userfeedbacktag_id,,,,,,,UNIQUE
+kittenchat,report_userfeedbackr_userfeedbackrecord_i_4f60a90b_fk_report_us,kittenchat,report_userfeedbackrecord_tags,userfeedbackrecord_id,kittenchat,report_userfeedbackrecord,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,report_userfeedbackr_userfeedbacktag_id_4b82f6ab_fk_report_us,kittenchat,report_userfeedbackrecord_tags,userfeedbacktag_id,kittenchat,report_userfeedbacktag,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,report_userfeedbacktag,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,rewards_anchorrewardshistory,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,xadmin_bookmark,id,,,,,,,PRIMARY KEY
+kittenchat,xadmin_bookmark_content_type_id_60941679_fk_django_co,kittenchat,xadmin_bookmark,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,xadmin_bookmark_user_id_42d307fc_fk_auth_user_id,kittenchat,xadmin_bookmark,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,xadmin_log,id,,,,,,,PRIMARY KEY
+kittenchat,xadmin_log_content_type_id_2a6cb852_fk_django_content_type_id,kittenchat,xadmin_log,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,xadmin_log_user_id_bb16a176_fk_auth_user_id,kittenchat,xadmin_log,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,xadmin_usersettings,id,,,,,,,PRIMARY KEY
+kittenchat,xadmin_usersettings_user_id_edeabe4a_fk_auth_user_id,kittenchat,xadmin_usersettings,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,PRIMARY,kittenchat,xadmin_userwidget,id,,,,,,,PRIMARY KEY
+kittenchat,xadmin_userwidget_user_id_c159233a_fk_auth_user_id,kittenchat,xadmin_userwidget,user_id,kittenchat,auth_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,PRIMARY,idc,account_cache,cache_key,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,account_user,id,,,,,,,PRIMARY KEY
+idc,username,idc,account_user,username,,,,,,,UNIQUE
+idc,account_user_groups_user_id_group_id_4d09af3e_uniq,idc,account_user_groups,user_id,,,,,,,UNIQUE
+idc,account_user_groups_user_id_group_id_4d09af3e_uniq,idc,account_user_groups,group_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,account_user_groups,id,,,,,,,PRIMARY KEY
+idc,account_user_groups_group_id_6c71f749_fk_auth_group_id,idc,account_user_groups,group_id,idc,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,account_user_groups_user_id_14345e7b_fk_account_user_id,idc,account_user_groups,user_id,idc,account_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,account_user_property_user_id_key_652c804e_uniq,idc,account_user_property,key,,,,,,,UNIQUE
+idc,account_user_property_user_id_key_652c804e_uniq,idc,account_user_property,user_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,account_user_property,id,,,,,,,PRIMARY KEY
+idc,account_user_property_user_id_f10c8a01_fk_account_user_id,idc,account_user_property,user_id,idc,account_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,account_user_user_permis_user_id_permission_id_48bdd28b_uniq,idc,account_user_user_permissions,user_id,,,,,,,UNIQUE
+idc,account_user_user_permis_user_id_permission_id_48bdd28b_uniq,idc,account_user_user_permissions,permission_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,account_user_user_permissions,id,,,,,,,PRIMARY KEY
+idc,account_user_user_pe_permission_id_66c44191_fk_auth_perm,idc,account_user_user_permissions,permission_id,idc,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,account_user_user_pe_user_id_cc42d270_fk_account_u,idc,account_user_user_permissions,user_id,idc,account_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,PRIMARY,idc,account_verifyinfo,id,,,,,,,PRIMARY KEY
+idc,account_verifyinfo_user_id_85128af2_fk_account_user_id,idc,account_verifyinfo,user_id,idc,account_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,name,idc,auth_group,name,,,,,,,UNIQUE
+kittenchat,name,kittenchat,auth_group,name,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_group,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_group,id,,,,,,,PRIMARY KEY
+idc,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,idc,auth_group_permissions,group_id,,,,,,,UNIQUE
+idc,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,idc,auth_group_permissions,permission_id,,,,,,,UNIQUE
+kittenchat,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,kittenchat,auth_group_permissions,group_id,,,,,,,UNIQUE
+kittenchat,auth_group_permissions_group_id_permission_id_0cd325b0_uniq,kittenchat,auth_group_permissions,permission_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_group_permissions,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_group_permissions,id,,,,,,,PRIMARY KEY
+idc,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,idc,auth_group_permissions,group_id,idc,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,idc,auth_group_permissions,group_id,idc,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,kittenchat,auth_group_permissions,group_id,kittenchat,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissions_group_id_b120cbf9_fk_auth_group_id,kittenchat,auth_group_permissions,group_id,kittenchat,auth_group,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,idc,auth_group_permissions,permission_id,idc,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,idc,auth_group_permissions,permission_id,idc,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,kittenchat,auth_group_permissions,permission_id,kittenchat,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_group_permissio_permission_id_84c5c92e_fk_auth_perm,kittenchat,auth_group_permissions,permission_id,kittenchat,auth_permission,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_permission_content_type_id_codename_01ab375a_uniq,idc,auth_permission,content_type_id,,,,,,,UNIQUE
+idc,auth_permission_content_type_id_codename_01ab375a_uniq,idc,auth_permission,codename,,,,,,,UNIQUE
+kittenchat,auth_permission_content_type_id_codename_01ab375a_uniq,kittenchat,auth_permission,content_type_id,,,,,,,UNIQUE
+kittenchat,auth_permission_content_type_id_codename_01ab375a_uniq,kittenchat,auth_permission,codename,,,,,,,UNIQUE
+idc,PRIMARY,idc,auth_permission,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,auth_permission,id,,,,,,,PRIMARY KEY
+idc,auth_permission_content_type_id_2f476e4b_fk_django_co,idc,auth_permission,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,auth_permission_content_type_id_2f476e4b_fk_django_co,idc,auth_permission,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_permission_content_type_id_2f476e4b_fk_django_co,kittenchat,auth_permission,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,auth_permission_content_type_id_2f476e4b_fk_django_co,kittenchat,auth_permission,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,PRIMARY,idc,corsheaders_corsmodel,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,discovery_script,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_admin_log,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_admin_log,id,,,,,,,PRIMARY KEY
+idc,django_admin_log_content_type_id_c4bce8eb_fk_django_co,idc,django_admin_log,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,django_admin_log_content_type_id_c4bce8eb_fk_django_co,idc,django_admin_log,content_type_id,idc,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,django_admin_log_content_type_id_c4bce8eb_fk_django_co,kittenchat,django_admin_log,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+kittenchat,django_admin_log_content_type_id_c4bce8eb_fk_django_co,kittenchat,django_admin_log,content_type_id,kittenchat,django_content_type,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,django_admin_log_user_id_c564eba6_fk_account_user_id,idc,django_admin_log,user_id,idc,account_user,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,django_content_type_app_label_model_76bd3d3b_uniq,idc,django_content_type,app_label,,,,,,,UNIQUE
+idc,django_content_type_app_label_model_76bd3d3b_uniq,idc,django_content_type,model,,,,,,,UNIQUE
+kittenchat,django_content_type_app_label_model_76bd3d3b_uniq,kittenchat,django_content_type,app_label,,,,,,,UNIQUE
+kittenchat,django_content_type_app_label_model_76bd3d3b_uniq,kittenchat,django_content_type,model,,,,,,,UNIQUE
+idc,PRIMARY,idc,django_content_type,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_content_type,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_migrations,id,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_migrations,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,django_session,session_key,,,,,,,PRIMARY KEY
+kittenchat,PRIMARY,kittenchat,django_session,session_key,,,,,,,PRIMARY KEY
+idc,django_site_domain_a2e37b91_uniq,idc,django_site,domain,,,,,,,UNIQUE
+idc,PRIMARY,idc,django_site,id,,,,,,,PRIMARY KEY
+idc,idc_cabinet_serverroom_id_cabinet_name_eff20bad_uniq,idc,idc_cabinet,cabinet_name,,,,,,,UNIQUE
+idc,idc_cabinet_serverroom_id_cabinet_name_eff20bad_uniq,idc,idc_cabinet,serverroom_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,idc_cabinet,id,,,,,,,PRIMARY KEY
+idc,idc_cabinet_serverroom_id_1723fcf2_fk_idc_serverroom_id,idc,idc_cabinet,serverroom_id,idc,idc_serverroom,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,dc_name,idc,idc_datacenter,dc_name,,,,,,,UNIQUE
+idc,PRIMARY,idc,idc_datacenter,id,,,,,,,PRIMARY KEY
+idc,region,idc,idc_datacenter,region,,,,,,,UNIQUE
+idc,PRIMARY,idc,idc_device,id,,,,,,,PRIMARY KEY
+idc,idc_device_cabinet_id_30b6c63a_fk_idc_cabinet_id,idc,idc_device,cabinet_id,idc,idc_cabinet,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,PRIMARY,idc,idc_serverroom,id,,,,,,,PRIMARY KEY
+idc,room_name,idc,idc_serverroom,room_name,,,,,,,UNIQUE
+idc,idc_serverroom_dc_name_id_ef513c57_fk_idc_datacenter_id,idc,idc_serverroom,dc_name_id,idc,idc_datacenter,id,RESTRICT,RESTRICT,PRIMARY,FOREIGN KEY
+idc,cabinet_id,idc,idc_u_info,cabinet_id,,,,,,,UNIQUE
+idc,PRIMARY,idc,idc_u_info,id,,,,,,,PRIMARY KEY
+idc,PRIMARY,idc,todo,id,,,,,,,PRIMARY KEY

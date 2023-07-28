@@ -1,21 +1,24 @@
 import concurrent.futures
 
 
-def write_to_file(filename, data):
-    with open(filename, 'a') as file:
-        file.write(data + '\n')
+# 假设这是一个耗时的函数，接受一个参数并返回一个结果
+def some_function(input_value):
+    # 这里可以是任何需要耗时计算的操作
+    result = input_value * 2
+    return result
 
 
 def main():
-    filename = 'data.txt'
-    data_to_write = ['Data from Thread 1', 'Data from Thread 2', 'Data from Thread 3']
+    input_data = [1, 2, 3, 4, 5]  # 假设这是输入数据
 
-    # 使用ThreadPoolExecutor创建一个线程池
+    # 创建线程池
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = [executor.submit(write_to_file, filename, data) for data in data_to_write]
+        # 使用 map 方法来调用函数并获取结果，它会按照原始输入的顺序返回结果
+        results = list(executor.map(some_function, input_data))
 
-        # 等待所有任务完成
-        concurrent.futures.wait(futures)
+    # 打印结果
+    print("原始输入数据:", input_data)
+    print("对应结果:", results)
 
 
 if __name__ == "__main__":

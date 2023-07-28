@@ -1,10 +1,18 @@
+import concurrent.futures
 import queue
+from pathlib import Path
+
 import pymysql
 import csv
-import datetime
 import time
+
 from pymysql.cursors import DictCursor
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait
+import threading
+
+# 创建一个线程锁
+lock = threading.Lock()
+BASE_PATH = str(Path(__file__).parent)
 
 
 class ConnectionPool:
@@ -37,18 +45,16 @@ class ConnectionPool:
             connection.close()
 
     def executor(self, sql):
-        conn = self.get_connection()
-        try:
-            cursor = conn.cursor(DictCursor)
-            cursor.execute(sql)
-            cursor.close()
-            conn.commit()
-            # print(200, cursor.fetchall())
-            return cursor.fetchall()
-        except Exception as e:
-            conn.rollback()
-            print(500, e)
-        self.release_connection(conn)
+        with self.get_connection() as conn:
+            try:
+                with conn.cursor(DictCursor) as cursor:
+                    cursor.execute(sql)
+                    result = cursor.fetchall()
+                    conn.commit()
+                    return result
+            except Exception as e:
+                conn.rollback()
+                print(500, e)
         return None
 
 
@@ -60,6 +66,13 @@ db_port = 3306
 db_name = 'ecology'
 db_charset = 'utf8'
 
+# db_host = '127.0.0.1'
+# db_user = 'root'
+# db_pwd = '123456'
+# db_port = 3306
+# # db_name = 'idc'
+# db_charset = 'utf8'
+
 pool = ConnectionPool(
     max_connections=100,
     connection_params={
@@ -67,7 +80,7 @@ pool = ConnectionPool(
         "password": db_pwd,
         "host": db_host,
         "port": db_port,
-        "database": db_name,
+        # "database": db_name,
         "charset": db_charset,
     },
 )
@@ -76,24 +89,35 @@ csv_file_path = 'db.csv'
 
 
 def write_csv(filename, data: [{}], sql=None):
-    # 获取所有字段名，这里假设所有字典中的键相同
-    fieldnames = data[0].keys()
-    with open(filename, 'a+', newline='', encoding='utf-8') as f:
-        write = csv.writer(f)
-        if sql is not None:
-            write.writerow([sql])
+    with lock:
+        # 获取所有字段名，这里假设所有字典中的键相同
+        if data:
+            fieldnames = data[0].keys()
+            with open(filename, 'a+', newline='', encoding='utf-8') as f:
+                write = csv.writer(f)
+                if sql is not None:
+                    write.writerow([sql])
 
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(data)
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                writer.writerows(data)
 
     # print("写入成功！")
 
 
-def executor(sql):
+def executor(data):
+    if isinstance(data, tuple):
+        sql, tmp_sql = data
+        conn = pool.get_connection()
+        cursor = conn.cursor(DictCursor)
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        pool.release_connection(conn)
+        return rows, tmp_sql
+
     conn = pool.get_connection()
     cursor = conn.cursor(DictCursor)
-    cursor.execute(sql)
+    cursor.execute(data)
     rows = cursor.fetchall()
     # print(rows)
     pool.release_connection(conn)
@@ -133,39 +157,60 @@ def get_db_and_charset():
     SQL> show full columns from {表名称};
     :return:
     """
-
-    dbs = get_databases()
+    start = time.time()
+    sql = 'show databases;'
+    databases = executor(sql)
+    dbs = [i.get('Database') for i in databases]
+    # dbs = get_databases()
+    tb_status = []
+    tb_culumns = []
     db_charsets = []
     for db in dbs:
         sql1 = f'show create database {db};'
         sql2 = f'show tables from {db};'
         data = executor(sql1)
-        print(data)
-
-        # tables = executor(sql2)
-        # tables = [i.get(f'Tables_in_{db}') for i in tables]
+        tables = executor(sql2)
+        tables = [i.get(f'Tables_in_{db}') for i in tables]
         temp_sql = f'db--table--sql: {db}-- -- {sql1}'
         db_charsets.append((data, temp_sql))
-
         # write_csv('2.数据库字符集.csv', data, temp_sql)
-    # print(tables)
-    # for tb in tables:
-    #     sql3 = f"show table status from `{db}` like '{tb}';"
-    #     sql4 = f'show full columns from {db}.{tb}'
-    #     data = executor(sql3)
-    #     temp_sql = f'db--table--sql: {db}--{tb}-- {sql3}'
-    #     write_csv('2.tb_status 表字符集.csv', data, temp_sql)
-    #     # print(sql4)
-    #     data = executor(sql4)
-    #     temp_sql = f'db--table--sql: {db}--{tb}-- {sql4}'
-    #     write_csv('2.tb_column 列字符集.csv', data, temp_sql)
-    file_name = '2.数据库字符集.csv'
-    with ThreadPoolExecutor() as executors:
-        futures = [executors.submit(write_csv, file_name, data, temp_sql) for data, temp_sql in db_charsets]
-        # 等待所有任务完成
-        wait(futures)
+        for tb in tables:
+            sql3 = f"show table status from `{db}` like '{tb}';"
+            sql4 = f'show full columns from {db}.{tb}'
+            # data = executor(sql3)
+            temp_sql3 = f'db--table--sql: {db}--{tb}-- {sql3}'
+            tb_status.append((sql3, temp_sql3))
+            # write_csv('2.tb_status 表字符集.csv', data, temp_sql)
+            # print(sql4)
+            # data = executor(sql4)
+            temp_sql4 = f'db--table--sql: {db}--{tb}-- {sql4}'
+            tb_culumns.append((sql4, temp_sql4))
+            # write_csv('2.tb_column 列字符集.csv', data, temp_sql)
 
-get_db_and_charset()
+    # print(len(db_charsets), len(tb_status), len(tb_culumns))
+    file_name1 = '2.数据库字符集.csv'
+    with ThreadPoolExecutor(max_workers=5) as executors:
+        futures = [executors.submit(write_csv, file_name1, data, temp_sql) for (data, temp_sql) in db_charsets]
+        # 等待所有任务完成
+        concurrent.futures.wait(futures)
+    file_name2 = '2.tb_status 表字符集.csv'
+    with ThreadPoolExecutor(max_workers=10) as executors:
+        futures2 = list(executors.map(executor, tb_status))
+    with ThreadPoolExecutor(max_workers=5) as t:
+        data = [t.submit(write_csv, file_name2, data, temp_sql) for (data, temp_sql) in futures2]
+        print(len(data), data[:1])
+        wait(data)
+    file_name3 = '2.tb_column 列字符集.csv'
+    with ThreadPoolExecutor(max_workers=10) as executors:
+        futures3 = list(executors.map(executor, tb_culumns))
+    with ThreadPoolExecutor(max_workers=5) as t:
+        data = [t.submit(write_csv, file_name3, data, temp_sql) for (data, temp_sql) in futures3]
+        print(len(data), data[:1])
+        wait(data)
+    print(time.time() - start, 222)
+
+
+# get_db_and_charset()
 
 
 def get_db_obj():
@@ -484,10 +529,11 @@ def main(task_names):
             except Exception as e:
                 print(f"Function task encountered an error: {e}")
 
-# if __name__ == "__main__":
-#     task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
-#                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]
-#     start = time.time()
-#     print(start)
-#     main(task_names)
-#     print(time.time() - start)
+
+if __name__ == "__main__":
+    task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
+                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]
+    start = time.time()
+    print(start)
+    main(task_names)
+    print(time.time() - start)

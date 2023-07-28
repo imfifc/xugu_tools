@@ -1,30 +1,35 @@
 import pymysql
 from pymysql.cursors import DictCursor
 
-db_host = '192.168.2.212'
-db_user = 'ecology'
-db_pwd = 'Weaver@2023'
+# db_host = '192.168.2.212'
+# db_user = 'ecology'
+# db_pwd = 'Weaver@2023'
+# db_port = 3306
+
+db_host = '127.0.0.1'
+db_user = 'root'
+db_pwd = '123456'
 db_port = 3306
 
 connection = pymysql.connect(host=db_host, user=db_user, password=db_pwd, port=db_port, charset='utf8')
 
 
 def executor(sql):
-    if self._conn is None:
-        self.connect_db()
+    # if self._conn is None:
+    #     self.connect_db()
+    # try:
+    #     cur = self.cursor()
+    #     cur.execute(sql)
+    #     cur.close()
+    #     self._conn.commit()
+    #     return 200, "OK"
+    # except Exception as err:
+    #     self._conn.rollback()
+    #     return 500, err
     try:
-        cur = self.cursor()
-        cur.execute(sql)
-        cur.close()
-        self._conn.commit()
-        return 200, "OK"
-    except Exception as err:
-        self._conn.rollback()
-        return 500, err
-    try:
-        if conn is None:
-
-
+        if connection is None:
+            return
+        cursor = connection.cursor(DictCursor)
         cursor.execute(sql)
         result = cursor.fetchall()
         print(result)

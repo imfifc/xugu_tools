@@ -31,3 +31,6 @@ config-local.yaml
 
 # test file
 setup.yaml
+build
+dist
+

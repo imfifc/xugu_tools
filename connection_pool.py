@@ -6,6 +6,7 @@ import pymysql
 import csv
 import time
 import argparse
+import os
 
 from pymysql.cursors import DictCursor
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait
@@ -14,6 +15,8 @@ import threading
 # 创建一个线程锁
 lock = threading.Lock()
 BASE_PATH = str(Path(__file__).parent)
+timestands = time.strftime('%Y年%m月%d日%H%M%S', time.localtime())
+dir = f'result_{timestands}'
 
 
 class ConnectionPool:
@@ -60,6 +63,7 @@ class ConnectionPool:
 
 
 def write_csv(filename, data: [{}], sql=None):
+    filename = os.path.join(dir, filename)
     with lock:
         # 获取所有字段名，这里假设所有字典中的键相同
         if data:
@@ -518,12 +522,12 @@ if __name__ == "__main__":
     # db_charset = 'utf8'
 
     program = rf"""
-                               _ 
+                               _
      _ __ ___  _   _ ___  __ _| |
     | '_ ` _ \| | | / __|/ _` | |
     | | | | | | |_| \__ \ (_| | |
     |_| |_| |_|\__, |___/\__, |_|
-               |___/        |_|  
+               |___/        |_|        v1.0
 
         """
     print(program)
@@ -580,6 +584,8 @@ if __name__ == "__main__":
             "charset": 'utf8',
         },
     )
+    os.path.exists(dir) or os.makedirs(dir)
+    print(dir)
 
     task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]

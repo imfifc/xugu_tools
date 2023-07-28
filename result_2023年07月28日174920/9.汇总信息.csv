@@ -1,0 +1,46 @@
+"db--table--sql: -- -- 
+select '数据库' type,count(*) cnt from information_schema.SCHEMATA  
+     union all
+     select '表' type,count(*) cnt from information_schema.TABLES a
+            where table_type='BASE TABLE' 
+     union all
+     select '事件' type,count(*) cnt from information_schema.EVENTS b
+            
+     union all
+     select '触发器' type,count(*) cnt
+            from information_schema.TRIGGERS c 
+     union all
+     select '存储过程' type,count(*) cnt from information_schema.ROUTINES d
+            where routine_type='PROCEDURE' 
+     union all
+     select '函数' type,count(*) cnt from information_schema.ROUTINES e
+            where routine_type='FUNCTION' 
+     union all
+     select '视图' type,count(*) cnt
+            from information_schema.views f 
+     union all
+     select '索引' type,count(distinct index_name) cnt
+            from information_schema.STATISTICS g 
+     union all
+     select '分区表' type,count(*) cnt from information_schema.PARTITIONS p
+            where partition_name is not null 
+     union all 
+     select  '总行数' type, SUM(table_rows) as cnt
+     from information_schema.TABLES
+     where table_type='BASE TABLE'
+     union all 
+     select '总表空间大小' type,concat(round(sum((data_length + index_length)/1024/1024),2),'MB') as cnt from
+     information_schema.TABLES
+    "
+type,cnt
+数据库,9
+表,319
+事件,0
+触发器,8
+存储过程,29
+函数,25
+视图,107
+索引,204
+分区表,0
+总行数,3094977
+总表空间大小,50.86MB

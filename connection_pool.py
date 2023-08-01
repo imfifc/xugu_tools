@@ -1,16 +1,14 @@
-import concurrent.futures
+import argparse
+import csv
+import os
 import queue
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pymysql
-import csv
-import time
-import argparse
-import os
-
 from pymysql.cursors import DictCursor
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait
-import threading
 
 # 创建一个线程锁
 lock = threading.Lock()
@@ -188,36 +186,15 @@ def get_db_and_charset():
     file_name1 = '2.数据库字符集.csv'
     # for data, temp_sql in db_charsets:
     write_csv(file_name1, db_charsets)
-    # with ThreadPoolExecutor(max_workers=5) as executors:
-    #     futures = [executors.submit(write_csv, file_name1, data, temp_sql) for (data, temp_sql) in db_charsets]
-    #     # 等待所有任务完成
-    #     concurrent.futures.wait(futures)
     file_name2 = '2.tb_status 表字符集.csv'
     with ThreadPoolExecutor(max_workers=10) as executors:
         futures2 = list(executors.map(executor, tb_status))
         write_csv(file_name2, futures2)
 
-    # print(futures2[:2])
-
-    # for data, temp_sql in futures2:
-    #     write_csv(file_name2, data, temp_sql)
-
-    # with ThreadPoolExecutor(max_workers=5) as t:
-    #     data = [t.submit(write_csv, file_name2, data, temp_sql) for (data, temp_sql) in futures2]
-    #     # print(len(data), data[:1])
-    #     wait(data)
     file_name3 = '2.tb_column 列字符集.csv'
     with ThreadPoolExecutor(max_workers=10) as executors:
         futures3 = list(executors.map(executor, tb_culumns))
         write_csv(file_name3, futures3)
-
-    # for data, temp_sql in futures3:
-    #     write_csv(file_name3, data, temp_sql)
-    # with ThreadPoolExecutor(max_workers=5) as t:
-    #     data = [t.submit(write_csv, file_name3, data, temp_sql) for (data, temp_sql) in futures3]
-    #     # print(len(data), data[:1])
-    #     wait(data)
-    print(time.time() - start)
 
 
 def get_db_obj():
@@ -282,6 +259,7 @@ SQL> select 'database' type,schema_name db,count(*) cnt from information_schema.
     temp_sql = f'db--table--sql: -- -- {sql}'
     # print(data)
     write_csv('3.db对象及个数.csv', [(data, temp_sql)])
+
 
 #
 # db_host = '192.168.2.212'

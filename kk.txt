@@ -1,0 +1,6 @@
+db--table--sql: ecology--accountmoremenuinfo-- show table status from `ecology` like 'accountmoremenuinfo';
+Name,Engine,Version,Row_format,Rows,Avg_row_length,Data_length,Max_data_length,Index_length,Data_free,Auto_increment,Create_time,Update_time,Check_time,Collation,Checksum,Create_options,Comment
+accountmoremenuinfo,InnoDB,10,Dynamic,8,2048,16384,0,0,0,,2023-06-01 15:10:16,,,utf8mb3_general_ci,,,
+db--table--sql: ecology--actionexecutelog-- show table status from `ecology` like 'actionexecutelog';
+Name,Engine,Version,Row_format,Rows,Avg_row_length,Data_length,Max_data_length,Index_length,Data_free,Auto_increment,Create_time,Update_time,Check_time,Collation,Checksum,Create_options,Comment
+actionexecutelog,InnoDB,10,Dynamic,26,630,16384,0,32768,0,28,2023-06-01 15:10:36,,,utf8mb3_general_ci,,,

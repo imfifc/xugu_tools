@@ -1,3 +1,0 @@
-db--table--sql: -- -- show variables like 'innodb_file_per_table';
-Variable_name,Value
-innodb_file_per_table,ON

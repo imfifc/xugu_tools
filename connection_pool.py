@@ -62,22 +62,46 @@ class ConnectionPool:
         return None
 
 
-def write_csv(filename, data: [{}], sql=None):
+# def write_csv(filename, data: [{}], sql=None):
+#     filename = os.path.join(dir, filename)
+#     with lock:
+#         # 获取所有字段名，这里假设所有字典中的键相同
+#         if data:
+#             fieldnames = data[0].keys()
+#             with open(filename, 'a+', newline='', encoding='utf-8') as f:
+#                 write = csv.writer(f)
+#                 if sql is not None:
+#                     write.writerow([sql])
+#
+#                 writer = csv.DictWriter(f, fieldnames=fieldnames)
+#                 writer.writeheader()
+#                 writer.writerows(data)
+
+
+def write_csv(filename, data):
+    """
+    data: [
+           (
+            [{
+                'Name': 'actionexecutelog',
+                'Engine': 'InnoDB',
+            }], "db--table--sql: ecology--actionexecutelog-- show table status from `ecology` like 'actionexecutelog';")]
+    :param filename:
+    :param data: [(  [{}],temp_sql), ([],temp_sql) ]
+    :return:
+    """
+
     filename = os.path.join(dir, filename)
-    with lock:
-        # 获取所有字段名，这里假设所有字典中的键相同
-        if data:
-            fieldnames = data[0].keys()
-            with open(filename, 'a+', newline='', encoding='utf-8') as f:
-                write = csv.writer(f)
-                if sql is not None:
-                    write.writerow([sql])
+    with open(filename, 'a+', newline='', encoding='utf-8') as f:
+        if data[0][0]:
+            fieldnames = data[0][0][0].keys()
+            writer1 = csv.DictWriter(f, fieldnames=fieldnames)
+            write = csv.writer(f)
 
-                writer = csv.DictWriter(f, fieldnames=fieldnames)
-                writer.writeheader()
-                writer.writerows(data)
-
-    # print("写入成功！")
+            for i in data:
+                write.writerow([i[1]])
+                writer1.writeheader()
+                writer1.writerows(i[0])
 
 
 def executor(data):
@@ -116,7 +140,8 @@ def get_table_space():
     data = pool.executor(sql)
     # print(data)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('1.表空间模式.csv', data, temp_sql)
+    # write_csv('1.表空间模式.csv', data, temp_sql)
+    write_csv('1.表空间模式.csv', [(data, temp_sql)])
 
 
 def get_db_and_charset():
@@ -132,7 +157,7 @@ def get_db_and_charset():
     SQL> show full columns from {表名称};
     :return:
     """
-
+    start = time.time()
     dbs = get_databases()
     tb_status = []
     tb_culumns = []
@@ -161,27 +186,38 @@ def get_db_and_charset():
 
     # print(len(db_charsets), len(tb_status), len(tb_culumns))
     file_name1 = '2.数据库字符集.csv'
-    with ThreadPoolExecutor(max_workers=5) as executors:
-        futures = [executors.submit(write_csv, file_name1, data, temp_sql) for (data, temp_sql) in db_charsets]
-        # 等待所有任务完成
-        concurrent.futures.wait(futures)
+    # for data, temp_sql in db_charsets:
+    write_csv(file_name1, db_charsets)
+    # with ThreadPoolExecutor(max_workers=5) as executors:
+    #     futures = [executors.submit(write_csv, file_name1, data, temp_sql) for (data, temp_sql) in db_charsets]
+    #     # 等待所有任务完成
+    #     concurrent.futures.wait(futures)
     file_name2 = '2.tb_status 表字符集.csv'
     with ThreadPoolExecutor(max_workers=10) as executors:
         futures2 = list(executors.map(executor, tb_status))
-    with ThreadPoolExecutor(max_workers=5) as t:
-        data = [t.submit(write_csv, file_name2, data, temp_sql) for (data, temp_sql) in futures2]
-        # print(len(data), data[:1])
-        wait(data)
+        write_csv(file_name2, futures2)
+
+    # print(futures2[:2])
+
+    # for data, temp_sql in futures2:
+    #     write_csv(file_name2, data, temp_sql)
+
+    # with ThreadPoolExecutor(max_workers=5) as t:
+    #     data = [t.submit(write_csv, file_name2, data, temp_sql) for (data, temp_sql) in futures2]
+    #     # print(len(data), data[:1])
+    #     wait(data)
     file_name3 = '2.tb_column 列字符集.csv'
     with ThreadPoolExecutor(max_workers=10) as executors:
         futures3 = list(executors.map(executor, tb_culumns))
-    with ThreadPoolExecutor(max_workers=5) as t:
-        data = [t.submit(write_csv, file_name3, data, temp_sql) for (data, temp_sql) in futures3]
-        # print(len(data), data[:1])
-        wait(data)
+        write_csv(file_name3, futures3)
 
-
-# get_db_and_charset()
+    # for data, temp_sql in futures3:
+    #     write_csv(file_name3, data, temp_sql)
+    # with ThreadPoolExecutor(max_workers=5) as t:
+    #     data = [t.submit(write_csv, file_name3, data, temp_sql) for (data, temp_sql) in futures3]
+    #     # print(len(data), data[:1])
+    #     wait(data)
+    print(time.time() - start)
 
 
 def get_db_obj():
@@ -244,7 +280,35 @@ SQL> select 'database' type,schema_name db,count(*) cnt from information_schema.
     data = executor(sql)
     # print(data)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('3.db对象及个数.csv', data, temp_sql)
+    # print(data)
+    write_csv('3.db对象及个数.csv', [(data, temp_sql)])
+
+#
+# db_host = '192.168.2.212'
+# db_user = 'ecology'
+# db_pwd = 'Weaver@2023'
+# db_port = 3306
+# db_name = 'ecology'
+# db_charset = 'utf8'
+#
+# pool = ConnectionPool(
+#     max_connections=100,
+#     connection_params={
+#         "user": db_user,
+#         "password": db_pwd,
+#         "host": db_host,
+#         "port": db_port,
+#         # "database": db_name,
+#         "charset": 'utf8',
+#     },
+# )
+# os.path.exists(dir) or os.makedirs(dir)
+# print(dir)  # 54s
+# get_db_obj()
+# #
+# get_table_space()
+#
+# get_db_and_charset()
 
 
 def count_table_culumns():
@@ -262,7 +326,7 @@ SQL> select table_name,table_rows from information_schema.tables
         data = executor(sql)
         # print(data)
         temp_sql = f'db--table--sql: {db}-- -- {sql}'
-        write_csv('4.每个表的行数.csv', data, temp_sql)
+        write_csv('4.每个表的行数.csv', [(data, temp_sql)])
 
 
 def user_table_space():
@@ -279,7 +343,7 @@ SQL> select table_schema,concat(round(sum((data_length + index_length)/1024/1024
     data = executor(sql)
     # print(data)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('5.表空间大小.csv', data, temp_sql)
+    write_csv('5.表空间大小.csv', [(data, temp_sql)])
 
 
 def get_tb_column():
@@ -296,7 +360,7 @@ SQL> select column_name from information_schema.columns c
         data = executor(sql)
         # print(data)
         temp_sql = f'db--table--sql: {db}-- -- {sql}'
-        write_csv('6.表列名.csv', data, temp_sql)
+        write_csv('6.表列名.csv', [(data, temp_sql)])
 
 
 def get_db_columu_type_and_count():
@@ -313,7 +377,7 @@ SQL> select data_type, count(*) cnt from information_schema.COLUMNS c
         data = pool.executor(sql)
         # print(data)
         temp_sql = f'db--table--sql: {db}-- -- {sql}'
-        write_csv('7.每个库字段类型及个数.csv', data, temp_sql)
+        write_csv('7.每个库字段类型及个数.csv', [(data, temp_sql)])
 
 
 def get_primary_key_and_foreige_key():
@@ -399,7 +463,7 @@ def get_primary_key_and_foreige_key():
     '''
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('8.库的主键及外键.csv', data, temp_sql)
+    write_csv('8.库的主键及外键.csv', [(data, temp_sql)])
 
 
 def summary():
@@ -448,7 +512,7 @@ select '数据库' type,count(*) cnt from information_schema.SCHEMATA
     for i in data:
         print(f"{i.get('type')}: {i.get('cnt')}")
 
-    write_csv('9.汇总信息.csv', data, temp_sql)
+    write_csv('9.汇总信息.csv', [(data, temp_sql)])
 
 
 def migrate_post_db_charset():
@@ -527,7 +591,7 @@ if __name__ == "__main__":
     | '_ ` _ \| | | / __|/ _` | |
     | | | | | | |_| \__ \ (_| | |
     |_| |_| |_|\__, |___/\__, |_|
-               |___/        |_|        v1.0
+               |___/        |_|      power by xugu  v1.0
 
         """
     print(program)

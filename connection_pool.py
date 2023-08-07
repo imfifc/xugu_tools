@@ -98,6 +98,8 @@ def write_csv(filename, data):
 
             for i in data:
                 write.writerow([i[1]])
+                fieldnames = i[0][0].keys()
+                writer1.fieldnames = fieldnames
                 writer1.writeheader()
                 writer1.writerows(i[0])
 
@@ -159,6 +161,7 @@ def get_db_and_charset():
     dbs = get_databases()
     tb_status = []
     tb_culumns = []
+    tb_charsets = []
     db_charsets = []
     for db in dbs:
         sql1 = f'show create database {db};'
@@ -172,6 +175,7 @@ def get_db_and_charset():
         for tb in tables:
             sql3 = f"show table status from `{db}` like '{tb}';"
             sql4 = f'show full columns from {db}.{tb}'
+            sql5 = f'show create table  {db}.`{tb}`'
             # data = executor(sql3)
             temp_sql3 = f'db--table--sql: {db}--{tb}-- {sql3}'
             tb_status.append((sql3, temp_sql3))
@@ -181,6 +185,8 @@ def get_db_and_charset():
             temp_sql4 = f'db--table--sql: {db}--{tb}-- {sql4}'
             tb_culumns.append((sql4, temp_sql4))
             # write_csv('2.tb_column 列字符集.csv', data, temp_sql)
+            temp_sql5 = f'db--table--sql: {db}--{tb}-- {sql5}'
+            tb_charsets.append((sql5, temp_sql5))
 
     # print(len(db_charsets), len(tb_status), len(tb_culumns))
     file_name1 = '2.数据库字符集.csv'
@@ -195,6 +201,11 @@ def get_db_and_charset():
     with ThreadPoolExecutor(max_workers=10) as executors:
         futures3 = list(executors.map(executor, tb_culumns))
         write_csv(file_name3, futures3)
+
+    file_name4 = '2.表字符集.csv'
+    with ThreadPoolExecutor(max_workers=10) as executors:
+        futures4 = list(executors.map(executor, tb_charsets))
+        write_csv(file_name4, futures4)
 
 
 def get_db_obj():
@@ -259,34 +270,6 @@ SQL> select 'database' type,schema_name db,count(*) cnt from information_schema.
     temp_sql = f'db--table--sql: -- -- {sql}'
     # print(data)
     write_csv('3.db对象及个数.csv', [(data, temp_sql)])
-
-
-#
-# db_host = '192.168.2.212'
-# db_user = 'ecology'
-# db_pwd = 'Weaver@2023'
-# db_port = 3306
-# db_name = 'ecology'
-# db_charset = 'utf8'
-#
-# pool = ConnectionPool(
-#     max_connections=100,
-#     connection_params={
-#         "user": db_user,
-#         "password": db_pwd,
-#         "host": db_host,
-#         "port": db_port,
-#         # "database": db_name,
-#         "charset": 'utf8',
-#     },
-# )
-# os.path.exists(dir) or os.makedirs(dir)
-# print(dir)  # 54s
-# get_db_obj()
-# #
-# get_table_space()
-#
-# get_db_and_charset()
 
 
 def count_table_culumns():
@@ -450,12 +433,14 @@ def summary():
     :return:
     """
     sql = """
-select '数据库' type,count(*) cnt from information_schema.SCHEMATA  
+    select '数据库版本' type,@@version cnt
+     union all
+     select '数据库' type,count(*) cnt from information_schema.SCHEMATA  
      union all
      select '表' type,count(*) cnt from information_schema.TABLES a
             where table_type='BASE TABLE' 
      union all
-     select '事件' type,count(*) cnt from information_schema.EVENTS b
+     select '定时作业' type,count(*) cnt from information_schema.EVENTS b
             
      union all
      select '触发器' type,count(*) cnt
@@ -482,6 +467,8 @@ select '数据库' type,count(*) cnt from information_schema.SCHEMATA
      union all 
      select '总表空间大小' type,concat(round(sum((data_length + index_length)/1024/1024),2),'MB') as cnt from
      information_schema.TABLES
+     union all 
+     select '时区' type, @@global.time_zone as cnt;
     """
     data = pool.executor(sql)
     # print(data)
@@ -491,6 +478,93 @@ select '数据库' type,count(*) cnt from information_schema.SCHEMATA
         print(f"{i.get('type')}: {i.get('cnt')}")
 
     write_csv('9.汇总信息.csv', [(data, temp_sql)])
+
+
+def user_privilege():
+    """
+    获取数据库用户权限
+    :return:
+    """
+    sql = """
+    SELECT
+                user,
+                host,
+                Select_priv,Insert_priv,Update_priv,Delete_priv,Create_priv,
+                Drop_priv,Reload_priv,Shutdown_priv,Process_priv,
+                File_priv,Grant_priv,References_priv,Index_priv,Alter_priv,
+                Show_db_priv,Super_priv,Create_tmp_table_priv,
+                Lock_tables_priv,Execute_priv,
+                Repl_slave_priv,Repl_client_priv,
+                Create_view_priv,Show_view_priv,
+                Create_routine_priv,Alter_routine_priv,
+                Create_user_priv,Event_priv,
+                Trigger_priv,Create_tablespace_priv,
+                max_questions,
+                max_updates,
+                max_connections as '最大连接数',
+                max_user_connections as '最大用户连接数'
+              FROM mysql.user   
+    """
+    data = pool.executor(sql)
+    temp_sql = f'db--table--sql: -- -- {sql}'
+    write_csv('用户及用户权限.csv', [(data, temp_sql)])
+
+
+def crontab():
+    """
+    获取定时作业 、 定时任务
+    :return:
+    """
+    sql = """
+    SELECT * FROM information_schema.EVENTS;
+    """
+    data = pool.executor(sql)
+    if data:
+        temp_sql = f'db--table--sql: -- -- {sql}'
+        write_csv('定时作业.csv', [(data, temp_sql)])
+
+
+def keywords():
+    """
+    获取关键字
+    :return:
+    """
+    sql = """
+     SELECT word as "关键字",reserved as "是否保留" FROM information_schema.keywords;
+    """
+    data = pool.executor(sql)
+    temp_sql = f'db--table--sql: -- -- {sql}'
+    write_csv('关键字.csv', [(data, temp_sql)])
+
+
+db_host = '127.0.0.1'
+db_user = 'root'
+db_pwd = '123456'
+db_port = 3306
+# db_name = 'idc'
+db_charset = 'utf8'
+
+pool = ConnectionPool(
+    max_connections=100,
+    connection_params={
+        "user": db_user,
+        "password": db_pwd,
+        "host": db_host,
+        "port": db_port,
+        # "database": db_name,
+        "charset": 'utf8',
+    },
+)
+os.path.exists(dir) or os.makedirs(dir)
+print(dir)  # 54s
+# get_db_obj()
+# #
+# get_table_space()
+#
+# get_db_and_charset()
+keywords()
+# crontab()
+get_db_and_charset()
 
 
 def migrate_post_db_charset():
@@ -546,91 +620,90 @@ def main(task_names):
             except Exception as e:
                 print(f"Function task encountered an error: {e}")
 
-
-if __name__ == "__main__":
-    # 使用连接池
-    # db_host = '192.168.2.212'
-    # db_user = 'ecology'
-    # db_pwd = 'Weaver@2023'
-    # db_port = 3306
-    # db_name = 'ecology'
-    # db_charset = 'utf8'
-
-    # db_host = '127.0.0.1'
-    # db_user = 'root'
-    # db_pwd = '123456'
-    # db_port = 3306
-    # # db_name = 'idc'
-    # db_charset = 'utf8'
-
-    program = rf"""
-                               _
-     _ __ ___  _   _ ___  __ _| |
-    | '_ ` _ \| | | / __|/ _` | |
-    | | | | | | |_| \__ \ (_| | |
-    |_| |_| |_|\__, |___/\__, |_|
-               |___/        |_|      power by xugu  v1.0
-
-        """
-    print(program)
-    parser = argparse.ArgumentParser(
-        # description='这是一个数据库环境采集工具',
-        prefix_chars='-'
-    )
-    # 添加位置参数
-    # parser.add_argument('input_file', help='输入文件的路径')
-    # 添加可选参数
-    # parser.add_argument('-o', '--output', help='输出文件的路径')
-    parser.add_argument('-H', '--host', help='输入数据库ip地址')
-    parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int)
-    parser.add_argument('-u', '--user', help='输入数据库 用户')
-    parser.add_argument('-p', '--pwd', help='输入数据库密码')
-    # 添加标志参数
-    parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
-    args = parser.parse_args()
-    # 访问解析后的参数
-    # input_file = args.input_file
-    # output_file = args.output
-    host = args.host
-    port = args.port
-    user = args.user
-    password = args.pwd
-    verbose = args.verbose
-
-    # 在这里可以根据解析的参数执行相应的操作
-    if verbose:
-        print("显示详细信息")
-    if not host:
-        parser.print_help()
-        raise Exception('没有输入ip !!!\n')
-    if not port:
-        parser.print_help()
-        raise Exception('没有输入port !!!\n')
-    if not user:
-        parser.print_help()
-        raise Exception('没有输入user !!!\n')
-    if not password:
-        parser.print_help()
-        raise Exception('没有输入password !!!\n')
-    if host and port and user and password:
-        print(f'host: {host} port: {port} user: {user} password: {password}')
-
-    pool = ConnectionPool(
-        max_connections=100,
-        connection_params={
-            "user": user,
-            "password": password,
-            "host": host,
-            "port": port,
-            # "database": db_name,
-            "charset": 'utf8',
-        },
-    )
-    os.path.exists(dir) or os.makedirs(dir)
-    print(dir)
-
-    task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
-                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]
-    start = time.time()
-    main(task_names)
-    print(f'耗时: {time.time() - start:.2f} 秒')
+# if __name__ == "__main__":
+#     # 使用连接池
+#     # db_host = '192.168.2.212'
+#     # db_user = 'ecology'
+#     # db_pwd = 'Weaver@2023'
+#     # db_port = 3306
+#     # db_name = 'ecology'
+#     # db_charset = 'utf8'
+#
+#     # db_host = '127.0.0.1'
+#     # db_user = 'root'
+#     # db_pwd = '123456'
+#     # db_port = 3306
+#     # # db_name = 'idc'
+#     # db_charset = 'utf8'
+#
+#     program = rf"""
+#                                _
+#      _ __ ___  _   _ ___  __ _| |
+#     | '_ ` _ \| | | / __|/ _` | |
+#     | | | | | | |_| \__ \ (_| | |
+#     |_| |_| |_|\__, |___/\__, |_|
+#                |___/        |_|      power by xugu  v1.0
+#
+#         """
+#     print(program)
+#     parser = argparse.ArgumentParser(
+#         # description='这是一个数据库环境采集工具',
+#         prefix_chars='-'
+#     )
+#     # 添加位置参数
+#     # parser.add_argument('input_file', help='输入文件的路径')
+#     # 添加可选参数
+#     # parser.add_argument('-o', '--output', help='输出文件的路径')
+#     parser.add_argument('-H', '--host', help='输入数据库ip地址')
+#     parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int)
+#     parser.add_argument('-u', '--user', help='输入数据库 用户')
+#     parser.add_argument('-p', '--pwd', help='输入数据库密码')
+#     # 添加标志参数
+#     parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
+#     args = parser.parse_args()
+#     # 访问解析后的参数
+#     # input_file = args.input_file
+#     # output_file = args.output
+#     host = args.host
+#     port = args.port
+#     user = args.user
+#     password = args.pwd
+#     verbose = args.verbose
+#
+#     # 在这里可以根据解析的参数执行相应的操作
+#     if verbose:
+#         print("显示详细信息")
+#     if not host:
+#         parser.print_help()
+#         raise Exception('没有输入ip !!!\n')
+#     if not port:
+#         parser.print_help()
+#         raise Exception('没有输入port !!!\n')
+#     if not user:
+#         parser.print_help()
+#         raise Exception('没有输入user !!!\n')
+#     if not password:
+#         parser.print_help()
+#         raise Exception('没有输入password !!!\n')
+#     if host and port and user and password:
+#         print(f'host: {host} port: {port} user: {user} password: {password}')
+#
+#     pool = ConnectionPool(
+#         max_connections=100,
+#         connection_params={
+#             "user": user,
+#             "password": password,
+#             "host": host,
+#             "port": port,
+#             # "database": db_name,
+#             "charset": 'utf8',
+#         },
+#     )
+#     os.path.exists(dir) or os.makedirs(dir)
+#     print(dir)
+#
+#     task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
+#                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]
+#     start = time.time()
+#     main(task_names)
+#     print(f'耗时: {time.time() - start:.2f} 秒')

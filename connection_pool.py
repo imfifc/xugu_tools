@@ -468,7 +468,9 @@ def summary():
      select '总表空间大小' type,concat(round(sum((data_length + index_length)/1024/1024),2),'MB') as cnt from
      information_schema.TABLES
      union all 
-     select '时区' type, @@global.time_zone as cnt;
+     select '时区' type, @@global.time_zone as cnt
+     union all 
+     select '用户' type ,count(user) as cnt from mysql.user;
     """
     data = pool.executor(sql)
     # print(data)
@@ -529,42 +531,74 @@ def keywords():
     获取关键字
     :return:
     """
-    sql = """
+    sql = 'show tables from information_schema;'
+    sql1 = """
      SELECT word as "关键字",reserved as "是否保留" FROM information_schema.keywords;
     """
     data = pool.executor(sql)
+    tables = {i.get('Tables_in_information_schema') for i in data}
+    if 'keywords' in tables or 'KEYWORDS' in tables:
+        data1 = pool.executor(sql1)
+        temp_sql = f'db--table--sql: -- -- {sql1}'
+        write_csv('关键字.csv', [(data1, temp_sql)])
+
+
+def db_statistics():
+    """
+    数据库的统计信息
+    :return:
+    """
+    sql = "SELECT * FROM  information_schema.statistics"
+    data = pool.executor(sql)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('关键字.csv', [(data, temp_sql)])
+    write_csv('数据统库计信息.csv', [(data, temp_sql)])
 
 
-db_host = '127.0.0.1'
-db_user = 'root'
-db_pwd = '123456'
-db_port = 3306
-# db_name = 'idc'
-db_charset = 'utf8'
+def status_variables():
+    """
+    数据库的统计信息
+    :return:
+    """
+    sql1 = "SHOW GLOBAL STATUS"
+    sql2 = "SHOW GLOBAL VARIABLES"
+    data1 = pool.executor(sql1)
+    data2 = pool.executor(sql2)
+    temp_sql1 = f'db--table--sql: -- -- {sql1}'
+    temp_sql2 = f'db--table--sql: -- -- {sql2}'
+    write_csv('show status.csv', [(data1, temp_sql1)])
+    write_csv('show variables.csv', [(data2, temp_sql2)])
 
-pool = ConnectionPool(
-    max_connections=100,
-    connection_params={
-        "user": db_user,
-        "password": db_pwd,
-        "host": db_host,
-        "port": db_port,
-        # "database": db_name,
-        "charset": 'utf8',
-    },
-)
-os.path.exists(dir) or os.makedirs(dir)
-print(dir)  # 54s
-# get_db_obj()
-# #
-# get_table_space()
+
+# db_host = '127.0.0.1'
+# db_user = 'root'
+# db_pwd = '123456'
+# db_port = 3306
+# # db_name = 'idc'
+# db_charset = 'utf8'
 #
-# get_db_and_charset()
-keywords()
+# pool = ConnectionPool(
+#     max_connections=100,
+#     connection_params={
+#         "user": db_user,
+#         "password": db_pwd,
+#         "host": db_host,
+#         "port": db_port,
+#         # "database": db_name,
+#         "charset": 'utf8',
+#     },
+# )
+# os.path.exists(dir) or os.makedirs(dir)
+# print(dir)  # 54s
+# # get_db_obj()
+# # #
+# # get_table_space()
+# #
+# # get_db_and_charset()
+# keywords()
 # crontab()
-get_db_and_charset()
+# get_db_and_charset()
+# status_variables()
+# db_statistics()
 
 
 def migrate_post_db_charset():
@@ -620,90 +654,92 @@ def main(task_names):
             except Exception as e:
                 print(f"Function task encountered an error: {e}")
 
-# if __name__ == "__main__":
-#     # 使用连接池
-#     # db_host = '192.168.2.212'
-#     # db_user = 'ecology'
-#     # db_pwd = 'Weaver@2023'
-#     # db_port = 3306
-#     # db_name = 'ecology'
-#     # db_charset = 'utf8'
-#
-#     # db_host = '127.0.0.1'
-#     # db_user = 'root'
-#     # db_pwd = '123456'
-#     # db_port = 3306
-#     # # db_name = 'idc'
-#     # db_charset = 'utf8'
-#
-#     program = rf"""
-#                                _
-#      _ __ ___  _   _ ___  __ _| |
-#     | '_ ` _ \| | | / __|/ _` | |
-#     | | | | | | |_| \__ \ (_| | |
-#     |_| |_| |_|\__, |___/\__, |_|
-#                |___/        |_|      power by xugu  v1.0
-#
-#         """
-#     print(program)
-#     parser = argparse.ArgumentParser(
-#         # description='这是一个数据库环境采集工具',
-#         prefix_chars='-'
-#     )
-#     # 添加位置参数
-#     # parser.add_argument('input_file', help='输入文件的路径')
-#     # 添加可选参数
-#     # parser.add_argument('-o', '--output', help='输出文件的路径')
-#     parser.add_argument('-H', '--host', help='输入数据库ip地址')
-#     parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int)
-#     parser.add_argument('-u', '--user', help='输入数据库 用户')
-#     parser.add_argument('-p', '--pwd', help='输入数据库密码')
-#     # 添加标志参数
-#     parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
-#     args = parser.parse_args()
-#     # 访问解析后的参数
-#     # input_file = args.input_file
-#     # output_file = args.output
-#     host = args.host
-#     port = args.port
-#     user = args.user
-#     password = args.pwd
-#     verbose = args.verbose
-#
-#     # 在这里可以根据解析的参数执行相应的操作
-#     if verbose:
-#         print("显示详细信息")
-#     if not host:
-#         parser.print_help()
-#         raise Exception('没有输入ip !!!\n')
-#     if not port:
-#         parser.print_help()
-#         raise Exception('没有输入port !!!\n')
-#     if not user:
-#         parser.print_help()
-#         raise Exception('没有输入user !!!\n')
-#     if not password:
-#         parser.print_help()
-#         raise Exception('没有输入password !!!\n')
-#     if host and port and user and password:
-#         print(f'host: {host} port: {port} user: {user} password: {password}')
-#
-#     pool = ConnectionPool(
-#         max_connections=100,
-#         connection_params={
-#             "user": user,
-#             "password": password,
-#             "host": host,
-#             "port": port,
-#             # "database": db_name,
-#             "charset": 'utf8',
-#         },
-#     )
-#     os.path.exists(dir) or os.makedirs(dir)
-#     print(dir)
-#
-#     task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
-#                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary]
-#     start = time.time()
-#     main(task_names)
-#     print(f'耗时: {time.time() - start:.2f} 秒')
+
+if __name__ == "__main__":
+    # 使用连接池
+    # db_host = '192.168.2.212'
+    # db_user = 'ecology'
+    # db_pwd = 'Weaver@2023'
+    # db_port = 3306
+    # db_name = 'ecology'
+    # db_charset = 'utf8'
+
+    # db_host = '127.0.0.1'
+    # db_user = 'root'
+    # db_pwd = '123456'
+    # db_port = 3306
+    # # db_name = 'idc'
+    # db_charset = 'utf8'
+
+    program = rf"""
+                               _
+     _ __ ___  _   _ ___  __ _| |
+    | '_ ` _ \| | | / __|/ _` | |
+    | | | | | | |_| \__ \ (_| | |
+    |_| |_| |_|\__, |___/\__, |_|
+               |___/        |_|      power by xugu  v1.0
+
+        """
+    print(program)
+    parser = argparse.ArgumentParser(
+        # description='这是一个数据库环境采集工具',
+        prefix_chars='-'
+    )
+    # 添加位置参数
+    # parser.add_argument('input_file', help='输入文件的路径')
+    # 添加可选参数
+    # parser.add_argument('-o', '--output', help='输出文件的路径')
+    parser.add_argument('-H', '--host', help='输入数据库ip地址')
+    parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int)
+    parser.add_argument('-u', '--user', help='输入数据库 用户')
+    parser.add_argument('-p', '--pwd', help='输入数据库密码')
+    # 添加标志参数
+    parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
+    args = parser.parse_args()
+    # 访问解析后的参数
+    # input_file = args.input_file
+    # output_file = args.output
+    host = args.host
+    port = args.port
+    user = args.user
+    password = args.pwd
+    verbose = args.verbose
+
+    # 在这里可以根据解析的参数执行相应的操作
+    if verbose:
+        print("显示详细信息")
+    if not host:
+        parser.print_help()
+        raise Exception('没有输入ip !!!\n')
+    if not port:
+        parser.print_help()
+        raise Exception('没有输入port !!!\n')
+    if not user:
+        parser.print_help()
+        raise Exception('没有输入user !!!\n')
+    if not password:
+        parser.print_help()
+        raise Exception('没有输入password !!!\n')
+    if host and port and user and password:
+        print(f'host: {host} port: {port} user: {user} password: {password}')
+
+    pool = ConnectionPool(
+        max_connections=100,
+        connection_params={
+            "user": user,
+            "password": password,
+            "host": host,
+            "port": port,
+            # "database": db_name,
+            "charset": 'utf8',
+        },
+    )
+    os.path.exists(dir) or os.makedirs(dir)
+    print(dir)
+
+    task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
+                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary, user_privilege, crontab,
+                  keywords, db_statistics, status_variables]
+    start = time.time()
+    main(task_names)
+    print(f'耗时: {time.time() - start:.2f} 秒')

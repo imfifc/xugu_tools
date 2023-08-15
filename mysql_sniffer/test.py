@@ -49,7 +49,7 @@ def print_mysql_packets(pkt):
 bpf = BPF(text=BPF_CODE)
 
 # Attach the BPF filter to the network interface
-bpf.attach_raw_socket("lo")  # Replace "lo" with the desired network interface name
+bpf.attach_raw_socket("ens33")  # Replace "lo" with the desired network interface name
 
 # Retrieve the packet count table
 pkt_counts = bpf.get_table("pkt_counts")

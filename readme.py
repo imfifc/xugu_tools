@@ -2,17 +2,13 @@
 
 
 # pyinstaller -c -F --hidden-import=altgraph --hidden-import=lib --hidden-import=pefile --hidden-import=PyMySQL  --hidden-import=pywin32-ctypes   .\connection_pool.py
-#argparse
+# argparse
 
 # pyinstaller -c -F --hidden-import=argparse args.py
 # pyinstaller  .\connection_pool.spec
 
 
-
-
-
-
-
+# pyinstaller -c -F --hidden-import=scapy    ./mysql_sniffers.py
 
 
 """

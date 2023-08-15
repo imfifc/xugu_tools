@@ -5,7 +5,7 @@ from datetime import datetime
 import argparse
 
 
-def analyze_packet(packet, port=3306):
+def analyze_packet(packet, filename, port):
     if packet.haslayer(TCP):
         if packet[TCP].dport == port or packet[TCP].sport == port:
             payload = bytes(packet[TCP].payload)
@@ -27,20 +27,29 @@ def analyze_packet(packet, port=3306):
                         res = f'USE {res}'
                     output = f"{time}  {ip}  {res}"
                     print(output)
-                    with open('output.txt', 'a+', newline='', encoding='utf-8') as f:
+                    with open(filename, 'a+', newline='', encoding='utf-8') as f:
                         f.write(f'{output} \n')
 
 
-def main(interface, port):
+def main(interface, filename, port):
     try:
         print(f"Starting packet capture on interface: {interface}")
-        sniff(iface=interface, prn=lambda pkt: analyze_packet(pkt, port), filter=f"tcp port {port}")
+        sniff(iface=interface, prn=lambda pkt: analyze_packet(pkt, filename, port), filter=f"tcp port {port}")
     except KeyboardInterrupt:
         print("Packet capture stopped.")
         sys.exit(0)
 
 
 if __name__ == "__main__":
+    program = rf"""
+                               _                 _  __  __           
+     _ __ ___  _   _ ___  __ _| |      ___ _ __ (_)/ _|/ _| ___ _ __ 
+    | '_ ` _ \| | | / __|/ _` | |_____/ __| '_ \| | |_| |_ / _ \ '__|
+    | | | | | | |_| \__ \ (_| | |_____\__ \ | | | |  _|  _|  __/ |   
+    |_| |_| |_|\__, |___/\__, |_|     |___/_| |_|_|_| |_|  \___|_|   
+               |___/        |_|                                          v1.0
+    """
+    print(program)
     parser = argparse.ArgumentParser(
         # description='这是一个数据库环境采集工具',
         prefix_chars='-'
@@ -52,7 +61,9 @@ if __name__ == "__main__":
     #     sys.exit(1)
     # interface = sys.argv[1]
     parser.add_argument('-P', '--port', help='Port number, mysql数据库端口', default=3306, type=int)
+    parser.add_argument('-f', '--filename', help='输出文件名', default='output.txt')
     args = parser.parse_args()
     interface = args.interface
     port = args.port
-    main(interface, port)
+    filename = args.filename
+    main(interface, filename, port)

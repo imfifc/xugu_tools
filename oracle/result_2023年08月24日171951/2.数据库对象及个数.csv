@@ -1,0 +1,262 @@
+"schema--table--sql: BENCHMARKSQL--dba_objects-- select object_type,count(*)  from dba_objects where owner='BENCHMARKSQL' group by object_type"
+OBJECT_TYPE,COUNT(*)
+SEQUENCE,1
+TRIGGER,1
+SYNONYM,1
+TABLE,10
+INDEX,12
+FUNCTION,1
+"schema--table--sql: DTS_TEST--dba_objects-- select object_type,count(*)  from dba_objects where owner='DTS_TEST' group by object_type"
+OBJECT_TYPE,COUNT(*)
+LOB,2
+INDEX,40000
+TABLE,20002
+SYNONYM,1
+"schema--table--sql: FMIS9912--dba_objects-- select object_type,count(*)  from dba_objects where owner='FMIS9912' group by object_type"
+OBJECT_TYPE,COUNT(*)
+INDEX PARTITION,1239
+TABLE SUBPARTITION,76
+TABLE PARTITION,940
+SEQUENCE,4
+PROCEDURE,66
+LOB PARTITION,32
+DATABASE LINK,1
+INDEX SUBPARTITION,68
+LOB,105
+PACKAGE,29
+PACKAGE BODY,28
+TYPE BODY,5
+TRIGGER,8
+TABLE,5534
+INDEX,2238
+VIEW,6
+FUNCTION,20
+TYPE,15
+"schema--table--sql: HOSPITAL_YIB--dba_objects-- select object_type,count(*)  from dba_objects where owner='HOSPITAL_YIB' group by object_type"
+OBJECT_TYPE,COUNT(*)
+LOB,384
+TABLE,2128
+VIEW,2
+"schema--table--sql: HZERO--dba_objects-- select object_type,count(*)  from dba_objects where owner='HZERO' group by object_type"
+OBJECT_TYPE,COUNT(*)
+SEQUENCE,3461
+LOB,4
+TABLE,201
+"schema--table--sql: JACK--dba_objects-- select object_type,count(*)  from dba_objects where owner='JACK' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE,1
+"schema--table--sql: LIN--dba_objects-- select object_type,count(*)  from dba_objects where owner='LIN' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PROCEDURE,1
+TABLE,3
+"schema--table--sql: MIG_ORACLE--dba_objects-- select object_type,count(*)  from dba_objects where owner='MIG_ORACLE' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE PARTITION,10
+TABLE,1
+INDEX,1
+"schema--table--sql: OE--dba_objects-- select object_type,count(*)  from dba_objects where owner='OE' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PACKAGE BODY,1
+PACKAGE,1
+TABLE,25
+FUNCTION,2
+"schema--table--sql: SCHEMAOWNER--dba_objects-- select object_type,count(*)  from dba_objects where owner='SCHEMAOWNER' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PACKAGE,2
+PACKAGE BODY,2
+TRIGGER,1
+TABLE,2
+"schema--table--sql: SCOTT--dba_objects-- select object_type,count(*)  from dba_objects where owner='SCOTT' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PACKAGE,1
+PACKAGE BODY,1
+INDEX,2
+TABLE,5
+"schema--table--sql: SCOTT_B--dba_objects-- select object_type,count(*)  from dba_objects where owner='SCOTT_B' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PACKAGE,1
+PACKAGE BODY,1
+LOB,1
+TRIGGER,1
+FUNCTION,2
+TABLE,2
+"schema--table--sql: SYNCER--dba_objects-- select object_type,count(*)  from dba_objects where owner='SYNCER' group by object_type"
+OBJECT_TYPE,COUNT(*)
+LOB,2
+TABLE,66
+INDEX,45
+"schema--table--sql: SYS--dba_objects-- select object_type,count(*)  from dba_objects where owner='SYS' group by object_type"
+OBJECT_TYPE,COUNT(*)
+EDITION,1
+INDEX PARTITION,212
+CONSUMER GROUP,25
+TABLE SUBPARTITION,4
+SEQUENCE,135
+TABLE PARTITION,209
+SCHEDULE,3
+QUEUE,17
+RULE,1
+JAVA DATA,328
+PROCEDURE,101
+OPERATOR,7
+LOB PARTITION,1
+DESTINATION,2
+WINDOW,9
+SCHEDULER GROUP,4
+LOB,153
+PACKAGE,623
+PACKAGE BODY,597
+LIBRARY,144
+PROGRAM,19
+RULE SET,13
+CONTEXT,10
+TYPE BODY,113
+JAVA RESOURCE,760
+TRIGGER,11
+JOB CLASS,13
+UNDEFINED,9
+DIRECTORY,5
+TABLE,972
+INDEX,996
+VIEW,3748
+FUNCTION,99
+SYNONYM,9
+JAVA CLASS,20444
+JAVA SOURCE,2
+CLUSTER,10
+TYPE,1306
+RESOURCE PLAN,10
+JOB,10
+EVALUATION CONTEXT,9
+"schema--table--sql: SYSTEM--dba_objects-- select object_type,count(*)  from dba_objects where owner='SYSTEM' group by object_type"
+OBJECT_TYPE,COUNT(*)
+INDEX PARTITION,52
+SEQUENCE,20
+TABLE PARTITION,39
+QUEUE,4
+PROCEDURE,1
+LOB,22
+PACKAGE,1
+PACKAGE BODY,1
+TRIGGER,2
+TABLE,156
+INDEX,210
+SYNONYM,8
+VIEW,12
+TYPE,1
+"schema--table--sql: TEST--dba_objects-- select object_type,count(*)  from dba_objects where owner='TEST' group by object_type"
+OBJECT_TYPE,COUNT(*)
+SEQUENCE,1
+SYNONYM,1
+TABLE,3
+"schema--table--sql: TESTUSER1--dba_objects-- select object_type,count(*)  from dba_objects where owner='TESTUSER1' group by object_type"
+OBJECT_TYPE,COUNT(*)
+LOB,383
+TABLE,2136
+INDEX,24
+"schema--table--sql: TEST_USER--dba_objects-- select object_type,count(*)  from dba_objects where owner='TEST_USER' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PROCEDURE,1
+PACKAGE BODY,2
+PACKAGE,1
+VIEW,1
+FUNCTION,2
+TABLE,32
+SYNONYM,2
+INDEX,26
+TYPE,7
+"schema--table--sql: TPCDS--dba_objects-- select object_type,count(*)  from dba_objects where owner='TPCDS' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE,28
+INDEX,4
+"schema--table--sql: TXJT--dba_objects-- select object_type,count(*)  from dba_objects where owner='TXJT' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PROCEDURE,323
+PACKAGE,1
+TABLE,3
+"schema--table--sql: U1--dba_objects-- select object_type,count(*)  from dba_objects where owner='U1' group by object_type"
+OBJECT_TYPE,COUNT(*)
+SEQUENCE,20
+TABLE PARTITION,38
+PROCEDURE,3
+LOB,20
+TABLE,119
+INDEX,79
+FUNCTION,3
+VIEW,1
+"schema--table--sql: U2--dba_objects-- select object_type,count(*)  from dba_objects where owner='U2' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE SUBPARTITION,28
+INDEX PARTITION,12
+TABLE PARTITION,64
+SEQUENCE,1
+PROCEDURE,16
+LOB,11
+TRIGGER,17
+TABLE,82
+INDEX,35
+FUNCTION,4
+VIEW,4
+"schema--table--sql: U3--dba_objects-- select object_type,count(*)  from dba_objects where owner='U3' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE PARTITION,4
+PROCEDURE,1
+LOB,7
+INDEX,14
+TABLE,21
+"schema--table--sql: UM--dba_objects-- select object_type,count(*)  from dba_objects where owner='UM' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE SUBPARTITION,9
+INDEX PARTITION,2
+TABLE PARTITION,12
+SEQUENCE,1
+INDEX SUBPARTITION,5
+LOB,1
+TRIGGER,1
+TABLE,50
+INDEX,9
+FUNCTION,2
+"schema--table--sql: USO--dba_objects-- select object_type,count(*)  from dba_objects where owner='USO' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE PARTITION,4
+PROCEDURE,9
+PACKAGE BODY,5
+PACKAGE,6
+LOB,4
+TYPE BODY,1
+TRIGGER,8
+TABLE,143
+INDEX,29
+VIEW,3
+FUNCTION,14
+TYPE,13
+"schema--table--sql: USR_SOD--dba_objects-- select object_type,count(*)  from dba_objects where owner='USR_SOD' group by object_type"
+OBJECT_TYPE,COUNT(*)
+INDEX,7
+TABLE,6
+VIEW,2
+"schema--table--sql: UU--dba_objects-- select object_type,count(*)  from dba_objects where owner='UU' group by object_type"
+OBJECT_TYPE,COUNT(*)
+PACKAGE,3
+PACKAGE BODY,3
+INDEX,1
+TABLE,6
+"schema--table--sql: U_MANY--dba_objects-- select object_type,count(*)  from dba_objects where owner='U_MANY' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE,20000
+"schema--table--sql: U_SYNC--dba_objects-- select object_type,count(*)  from dba_objects where owner='U_SYNC' group by object_type"
+OBJECT_TYPE,COUNT(*)
+SEQUENCE,4
+PROCEDURE,5
+LOB,13
+TRIGGER,1
+FUNCTION,2
+TABLE,106
+INDEX,248
+"schema--table--sql: WHD--dba_objects-- select object_type,count(*)  from dba_objects where owner='WHD' group by object_type"
+OBJECT_TYPE,COUNT(*)
+TABLE,1
+"schema--table--sql: Z1--dba_objects-- select object_type,count(*)  from dba_objects where owner='Z1' group by object_type"
+OBJECT_TYPE,COUNT(*)
+INDEX,2
+TABLE,3

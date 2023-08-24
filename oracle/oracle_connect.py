@@ -1,3 +1,6 @@
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+
 import cx_Oracle
 import csv
 import os
@@ -117,7 +120,6 @@ SQL>  select object_type,count(*) from all_objects where owner='USER' group by o
     sql_user = "select username from dba_users WHERE ACCOUNT_STATUS ='OPEN' order by username"
     users = pool.executor(sql_user)
     users = [i.get('USERNAME') for i in users]
-    print(len(users), users)
     db_objects = []
     for user in users:
         sql = f"""select object_type,count(*)  from dba_objects where owner='{user}' group by object_type"""
@@ -254,19 +256,120 @@ def get_constraint():
     write_csv('7.每个用户模式下的表约束.csv', [(data, temp_sql)])
 
 
-if __name__ == "__main__":
-    pre_user = 'sys'
-    pre_password = 'rootroot'
-    user = "u1"
-    password = "123456"
-    dsn = '192.168.2.217:1521/ORCL'
+def sumary():
+    sql = """
+    SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
+    UNION ALL
+    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM dba_users
+    UNION ALL
+    select '用户' type ,TO_CHAR(count(*)) cnt from dba_users
+    UNION ALL
+    select '表' type,to_char(count(*)) cnt  from dba_tables 
+    UNION ALL
+    SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM dba_scheduler_jobs
+    UNION ALL
+    SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'FUNCTION'
+    UNION ALL
+    SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'PROCEDURE'
+    UNION ALL
+    SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM dba_triggers
+    UNION ALL
+    SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM dba_views
+    UNION ALL
+    SELECT '索引' type ,TO_CHAR(count(*))  FROM dba_indexes
+    UNION ALL
+    SELECT '总表空间大小' type, SUM(bytes) / (1024 * 1024) || 'MB' AS size_mb FROM dba_segments
+    UNION ALL
+    SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM dba_tables
+    UNION ALL
+    SELECT '分区表' type ,TO_CHAR(count(*)) FROM dba_part_tables
+    UNION ALL
+    SELECT 'DB时区' type,DBTIMEZONE cnt FROM dual
+    UNION ALL
+    SELECT 'session时区' type,SESSIONTIMEZONE cnt FROM dual
+    """
+    data = pool.executor(sql)
+    temp_sql = f'schema--table--sql: -- -- {sql}'
+    for i in data:
+        print(f"{i.get('TYPE')}: {i.get('CNT')}")
+    write_csv('8.概要信息.csv', [(data, temp_sql)])
 
-    sql2 = 'select * from "SCOTT"."SALGRADE"'
+
+def main(task_names):
+    # print(len(task_names))
+    with ThreadPoolExecutor(max_workers=len(task_names)) as executor:
+        futures = executor.map(lambda func: func(), task_names)
+        # 获取并处理任务的返回结果
+        for future in futures:
+            try:
+                # for future in concurrent.futures.as_completed(futures):
+                if future is not None:
+                    future.result()
+            # print(f"Function task returned: {result}")
+            except Exception as e:
+                print(f"Function task encountered an error: {e}")
+
+
+if __name__ == "__main__":
+    program = rf"""
+                          _      
+      ___  _ __ __ _  ___| | ___ 
+     / _ \| '__/ _` |/ __| |/ _ \
+    | (_) | | | (_| | (__| |  __/
+     \___/|_|  \__,_|\___|_|\___|     v1.0
+                                     
+    """
+    print(program)
+    parser = argparse.ArgumentParser(
+        # description='这是一个数据库环境采集工具',
+        prefix_chars='-'
+    )
+    parser.add_argument('-H', '--host', help='输入数据库ip地址')
+    parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int, default=1521)
+    parser.add_argument('-u', '--user', help='输入数据库 用户')
+    parser.add_argument('-p', '--pwd', help='输入数据库密码')
+    parser.add_argument('-s', '--service_name', help='输入服务名')
+    args = parser.parse_args()
+    # 访问解析后的参数
+    # input_file = args.input_file
+    # output_file = args.output
+    host = args.host
+    port = args.port
+    user = args.user
+    password = args.pwd
+    service_name = args.service_name
+    dsn = f'{host}:{port}/{service_name}'
+
+    if not host:
+        parser.print_help()
+        raise Exception('没有输入ip !!!\n')
+    if not port:
+        parser.print_help()
+        raise Exception('没有输入port !!!\n')
+    if not user:
+        parser.print_help()
+        raise Exception('没有输入user !!!\n')
+    if not password:
+        parser.print_help()
+        raise Exception('没有输入password !!!\n')
+    if not service_name:
+        parser.print_help()
+        raise Exception('请输入服务名!!!\n')
+    if host and port and user and password and service_name:
+        print(f'dsn: {dsn} user: {user} password: {password}')
+    # pre_user = 'sys'
+    # pre_password = 'rootroot'
+    # user = "u1"
+    # password = "123456"
+    # dsn = '192.168.2.217:1521/ORCL'
+
+    # sql2 = 'select * from "SCOTT"."SALGRADE"'
 
     pool = OracleConnectionPool(user, password, dsn)
     timestands = time.strftime('%Y年%m月%d日%H%M%S', time.localtime())
     dir = f'result_{timestands}'
     os.path.exists(dir) or os.makedirs(dir)
+    print(dir)
     # try:
     #     data = pool.executor(sql2)
     #     print(data)
@@ -280,6 +383,19 @@ if __name__ == "__main__":
     # get_objects_count()
     # get_table_statistic()
     # get_table_space()
+    # get_table_column()
+    # get_table_column_type()
+    # get_constraint()
+    # sumary()
+    # task_names = [get_table_space, get_db_and_charset, ]
+    start = time.time()
+    # main(task_names)
+    get_charset()
+    get_objects_count()
+    get_table_statistic()
+    get_table_space()
     get_table_column()
     get_table_column_type()
     get_constraint()
+    sumary()
+    print(f'耗时: {time.time() - start:.2f} 秒')

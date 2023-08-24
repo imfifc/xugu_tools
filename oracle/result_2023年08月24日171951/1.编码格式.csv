@@ -1,0 +1,3 @@
+schema--table--sql: -- -- select * from v$nls_parameters a where a.PARAMETER='NLS_CHARACTERSET'
+PARAMETER,VALUE
+NLS_CHARACTERSET,ZHS16GBK

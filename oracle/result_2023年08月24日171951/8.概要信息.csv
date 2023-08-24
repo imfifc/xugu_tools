@@ -1,0 +1,47 @@
+"schema--table--sql: -- -- 
+    SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
+    UNION ALL
+    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM dba_users
+    UNION ALL
+    select '用户' type ,TO_CHAR(count(*)) cnt from dba_users
+    UNION ALL
+    select '表' type,to_char(count(*)) cnt  from dba_tables 
+    UNION ALL
+    SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM dba_scheduler_jobs
+    UNION ALL
+    SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'FUNCTION'
+    UNION ALL
+    SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'PROCEDURE'
+    UNION ALL
+    SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM dba_triggers
+    UNION ALL
+    SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM dba_views
+    UNION ALL
+    SELECT '索引' type ,TO_CHAR(count(*))  FROM dba_indexes
+    UNION ALL
+    SELECT '总表空间大小' type, SUM(bytes) / (1024 * 1024) || 'MB' AS size_mb FROM dba_segments
+    UNION ALL
+    SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM dba_tables
+    UNION ALL
+    SELECT '分区表' type ,TO_CHAR(count(*)) FROM dba_part_tables
+    UNION ALL
+    SELECT 'DB时区' type,DBTIMEZONE cnt FROM dual
+    UNION ALL
+    SELECT 'session时区' type,SESSIONTIMEZONE cnt FROM dual
+    "
+TYPE,CNT
+数据库版本,Oracle Database 11g Enterprise Edition Release 11.2.0.1.0 - 64bit Production
+用户模式,69
+用户,69
+表,53494
+定时作业,14
+函数,356
+存储过程,583
+触发器,651
+视图,5050
+索引,48381
+总表空间大小,122516.4375MB
+所有表总行数,113983561
+分区表,153
+DB时区,+00:00
+session时区,+08:00

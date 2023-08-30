@@ -7,7 +7,7 @@ block_cipher = None
 a = Analysis(
     ['oracle_connect.py'],
     pathex=[],
-    binaries=[],
+    binaries=[('D:\\llearn\\xugu\\oracle\\dll', '.')],
     datas=[],
     hiddenimports=['cx_Oracle'],
     hookspath=[],

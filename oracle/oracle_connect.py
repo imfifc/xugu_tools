@@ -77,7 +77,7 @@ def write_csv(filename, data):
     :return:
     """
     filename = os.path.join(dir, filename)
-    with open(filename, 'a+', newline='', encoding='utf-8') as f:
+    with open(filename, 'a+', newline='') as f:
         if data[0][0]:
             fieldnames = data[0][0][0].keys()
             writer1 = csv.DictWriter(f, fieldnames=fieldnames)

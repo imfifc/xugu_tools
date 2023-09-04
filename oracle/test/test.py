@@ -6,14 +6,14 @@ import os
 def check_env():
     # print(f'os.environ["PATH"]: {os.environ["PATH"]}')
     print(f'os.system("where oci.dll"): {os.system("where oci.dll")}')
-    print(11, os.system('where oracore.dll'))
-    print(22, os.system('where  orauts.dll'))
-    print(33, os.system('where ucrtbased.dll'))
+    # print(11, os.system('where oracore.dll'))
+    # print(22, os.system('where  orauts.dll'))
+    # print(33, os.system('where ucrtbased.dll'))
 
 
 check_env()
 # 不加这个库路径 就报错
-cx_Oracle.init_oracle_client(lib_dir=r"D:\llearn\xugu\oracle\dll")
+# cx_Oracle.init_oracle_client(lib_dir=r"D:\llearn\xugu\oracle\dll")
 
 ver = cx_Oracle.clientversion()
 # print(cx_Oracle.init_oracle_client())

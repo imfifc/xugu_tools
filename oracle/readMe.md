@@ -40,3 +40,17 @@ linux
 pyinstaller -c -F --clean --hidden-import=cx_Oracle --add-binary="./instantclient_18_5/lib/*:."  oracle_connect.py
 
 ```
+
+
+linux instantclient 下载:
+https://download.oracle.com/otn_software/linux/instantclient/1920000/instantclient-basiclite-linux.x64-19.20.0.0.0dbru.zip
+导出为环境变量:
+export LD_LIBRARY_PATH=/tmp/xugu/oracle/instantclient_19_20:$LD_LIBRARY_PATH  
+
+将环境变量LD_LIBRARY_PATH设置为Instant Client版本的适当目录。 例如：
+export LD_LIBRARY_PATH=/opt/oracle/instantclient_19_6:$LD_LIBRARY_PATH
+
+
+报错: Cannot locate a 64-bit Oracle Client library: "libaio.so.1
+则安装libaio:
+yum install -y libaio-0.3.109-13.el7.x86_64

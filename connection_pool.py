@@ -91,17 +91,21 @@ def write_csv(filename, data):
 
     filename = os.path.join(dir, filename)
     with open(filename, 'a+', newline='', encoding='utf-8') as f:
-        if data[0][0]:
-            fieldnames = data[0][0][0].keys()
-            writer1 = csv.DictWriter(f, fieldnames=fieldnames)
-            write = csv.writer(f)
-
-            for i in data:
-                write.writerow([i[1]])
+        for i in data:
+            if i[0] and i[0][0]:
                 fieldnames = i[0][0].keys()
+                writer1 = csv.DictWriter(f, fieldnames=fieldnames)
+                write = csv.writer(f)
+                break
+
+        for item in data:
+            if item and item[0]:
+                datas, temp_sql = item
+                write.writerow([temp_sql])
+                fieldnames = datas[0].keys()
                 writer1.fieldnames = fieldnames
                 writer1.writeheader()
-                writer1.writerows(i[0])
+                writer1.writerows(datas)
 
 
 def executor(data):
@@ -109,14 +113,24 @@ def executor(data):
         sql, tmp_sql = data
         conn = pool.get_connection()
         cursor = conn.cursor(DictCursor)
-        cursor.execute(sql)
+        try:
+            cursor.execute(sql)
+        except Exception as e:
+            print(f'执行异常；{sql},{e}')
+            pool.release_connection(conn)
+            return None
         rows = cursor.fetchall()
         pool.release_connection(conn)
         return rows, tmp_sql
 
     conn = pool.get_connection()
     cursor = conn.cursor(DictCursor)
-    cursor.execute(data)
+    try:
+        cursor.execute(data)
+    except Exception as e:
+        print(f'执行异常；{data},{e}')
+        pool.release_connection(conn)
+        return None
     rows = cursor.fetchall()
     # print(rows)
     pool.release_connection(conn)
@@ -164,8 +178,8 @@ def get_db_and_charset():
     tb_charsets = []
     db_charsets = []
     for db in dbs:
-        sql1 = f'show create database {db};'
-        sql2 = f'show tables from {db};'
+        sql1 = f'show create database `{db}`;'
+        sql2 = f'show tables from `{db}`;'
         data = executor(sql1)
         tables = executor(sql2)
         tables = [i.get(f'Tables_in_{db}') for i in tables]
@@ -174,8 +188,8 @@ def get_db_and_charset():
         # write_csv('2.数据库字符集.csv', data, temp_sql)
         for tb in tables:
             sql3 = f"show table status from `{db}` like '{tb}';"
-            sql4 = f'show full columns from {db}.{tb}'
-            sql5 = f'show create table  {db}.`{tb}`'
+            sql4 = f'show full columns from `{db}`.`{tb}`'
+            sql5 = f'show create table  `{db}`.`{tb}`'
             # data = executor(sql3)
             temp_sql3 = f'db--table--sql: {db}--{tb}-- {sql3}'
             tb_status.append((sql3, temp_sql3))
@@ -640,19 +654,20 @@ SQL> SELECT DB_NAME,CHAR_SET,TIME_ZONE,ONLINE FROM DBA_DATABASES WHERE DB_NAME='
 
 # 迁移后数据
 # migrate_post_db_charset()
+
 def main(task_names):
     # print(len(task_names))
     with ThreadPoolExecutor(max_workers=len(task_names)) as executor:
-        futures = executor.map(lambda func: func(), task_names)
-        # 获取并处理任务的返回结果
-        for future in futures:
-            try:
+        try:
+            futures = executor.map(lambda func: func(), task_names)
+            # 获取并处理任务的返回结果
+            for future in futures:
                 # for future in concurrent.futures.as_completed(futures):
                 if future is not None:
                     future.result()
-            # print(f"Function task returned: {result}")
-            except Exception as e:
-                print(f"Function task encountered an error: {e}")
+                # print(f"Function task returned: {result}")
+        except Exception as e:
+            print(f"Function task encountered an error: {e}")
 
 
 if __name__ == "__main__":

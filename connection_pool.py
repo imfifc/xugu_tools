@@ -90,14 +90,15 @@ def write_csv(filename, data):
     """
 
     filename = os.path.join(dir, filename)
-    with open(filename, 'a+', newline='', encoding='utf-8') as f:
-        for i in data:
-            if i[0] and i[0][0]:
-                fieldnames = i[0][0].keys()
-                writer1 = csv.DictWriter(f, fieldnames=fieldnames)
-                write = csv.writer(f)
-                break
-
+    with open(filename, 'a+', newline='', errors='ignore') as f:
+        # for i in data:
+        #     if i[0] and i[0][0]:
+        #         fieldnames = i[0][0].keys()
+        #         writer1 = csv.DictWriter(f, fieldnames=fieldnames)
+        #         write = csv.writer(f)
+        #         break
+        writer1 = csv.DictWriter(f, fieldnames=[])
+        write = csv.writer(f)
         for item in data:
             if item and item[0]:
                 datas, temp_sql = item
@@ -207,17 +208,17 @@ def get_db_and_charset():
     # for data, temp_sql in db_charsets:
     write_csv(file_name1, db_charsets)
     file_name2 = '2.tb_status 表字符集.csv'
-    with ThreadPoolExecutor(max_workers=10) as executors:
+    with ThreadPoolExecutor(max_workers=5) as executors:
         futures2 = list(executors.map(executor, tb_status))
         write_csv(file_name2, futures2)
 
     file_name3 = '2.tb_column 列字符集.csv'
-    with ThreadPoolExecutor(max_workers=10) as executors:
+    with ThreadPoolExecutor(max_workers=5) as executors:
         futures3 = list(executors.map(executor, tb_culumns))
         write_csv(file_name3, futures3)
 
     file_name4 = '2.表字符集.csv'
-    with ThreadPoolExecutor(max_workers=10) as executors:
+    with ThreadPoolExecutor(max_workers=5) as executors:
         futures4 = list(executors.map(executor, tb_charsets))
         write_csv(file_name4, futures4)
 
@@ -526,20 +527,6 @@ def user_privilege():
     write_csv('用户及用户权限.csv', [(data, temp_sql)])
 
 
-def crontab():
-    """
-    获取定时作业 、 定时任务
-    :return:
-    """
-    sql = """
-    SELECT * FROM information_schema.EVENTS;
-    """
-    data = pool.executor(sql)
-    if data:
-        temp_sql = f'db--table--sql: -- -- {sql}'
-        write_csv('定时作业.csv', [(data, temp_sql)])
-
-
 def keywords():
     """
     获取关键字
@@ -547,7 +534,7 @@ def keywords():
     """
     sql = 'show tables from information_schema;'
     sql1 = """
-     SELECT word as "关键字",reserved as "是否保留" FROM information_schema.keywords;
+    SELECT word as "关键字",reserved as "是否保留" FROM information_schema.keywords order by reserved desc;
     """
     data = pool.executor(sql)
     tables = {i.get('Tables_in_information_schema') for i in data}
@@ -581,6 +568,103 @@ def status_variables():
     temp_sql2 = f'db--table--sql: -- -- {sql2}'
     write_csv('show status.csv', [(data1, temp_sql1)])
     write_csv('show variables.csv', [(data2, temp_sql2)])
+
+
+def get_event_job():
+    """
+    show events
+    show create event idc.event_one
+    :return:
+    """
+    sql = 'select event_schema,event_name from information_schema.events'
+    jobs = pool.executor(sql)
+    events = []
+    for i in jobs:
+        db = i.get('EVENT_SCHEMA') or i.get('event_schema')
+        event_name = i.get('EVENT_NAME') or i.get('event_name')
+        sql2 = f'show create event `{db}`.`{event_name}`'
+        data = pool.executor(sql2)
+        temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
+        events.append((data, temp_sql2))
+    write_csv('定时作业 show events.csv', events)
+
+
+def get_triggers():
+    """
+    show triggers
+    select trigger_schema,trigger_name from information_schema.triggers
+    show create trigger trigger_one
+    :return:
+    """
+    sql = 'select trigger_schema,trigger_name from information_schema.triggers'
+    triggers = pool.executor(sql)
+    res = []
+    for i in triggers:
+        db = i.get('TRIGGER_SCHEMA') or i.get('trigger_schema')
+        trigger_name = i.get('TRIGGER_NAME') or i.get('trigger_name')
+        sql2 = f'show create trigger `{db}`.`{trigger_name}`'
+        data = pool.executor(sql2)
+        temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
+        res.append((data, temp_sql2))
+    write_csv('触发器 show triggers.csv', res)
+
+
+def get_procedure():
+    """
+    show procedure status
+    select routine_schema,routine_name from information_schema.routines  where routine_type='PROCEDURE'
+    show create procedure  idc.get_data
+    :return:
+    """
+    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='PROCEDURE'"
+    procedures = pool.executor(sql)
+    res = []
+    for i in procedures:
+        db = i.get('ROUTINE_SCHEMA') or i.get('routine_schema')
+        procedure_name = i.get('ROUTINE_NAME') or i.get('routine_name')
+        sql2 = f'show create procedure `{db}`.`{procedure_name}`'
+        data = pool.executor(sql2)
+        temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
+        res.append((data, temp_sql2))
+    write_csv('存储过程 show procedure status.csv', res)
+
+
+def get_function():
+    """
+    select routine_schema,routine_name from information_schema.routines  where routine_type='FUNCTION'
+    show create function idc.func_1
+    :return:
+    """
+    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='FUNCTION'"
+    funcs = pool.executor(sql)
+    res = []
+    for i in funcs:
+        db = i.get('ROUTINE_SCHEMA') or i.get('routine_schema')
+        func_name = i.get('ROUTINE_NAME') or i.get('routine_name')
+        sql2 = f'show create function `{db}`.`{func_name}`'
+        data = pool.executor(sql2)
+        temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
+        res.append((data, temp_sql2))
+    write_csv('函数 .csv', res)
+
+
+def get_view():
+    """
+    select table_schema,table_name from information_schema.views
+    show create view idc.view_one
+    :return:
+    """
+    sql = "select table_schema,table_name from information_schema.views"
+    funcs = pool.executor(sql)
+    res = []
+    for i in funcs:
+        db = i.get('TABLE_SCHEMA') or i.get('table_schema')
+        view_name = i.get('TABLE_NAME') or i.get('table_name')
+        sql2 = f'show create view `{db}`.`{view_name}`'
+        data = executor(sql2)
+        temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
+        res.append((data, temp_sql2))
+    write_csv('视图 .csv', res)
 
 
 # db_host = '127.0.0.1'
@@ -658,16 +742,16 @@ SQL> SELECT DB_NAME,CHAR_SET,TIME_ZONE,ONLINE FROM DBA_DATABASES WHERE DB_NAME='
 def main(task_names):
     # print(len(task_names))
     with ThreadPoolExecutor(max_workers=len(task_names)) as executor:
-        try:
-            futures = executor.map(lambda func: func(), task_names)
-            # 获取并处理任务的返回结果
-            for future in futures:
+        futures = executor.map(lambda func: func(), task_names)
+        # 获取并处理任务的返回结果
+        for future in futures:
+            try:
                 # for future in concurrent.futures.as_completed(futures):
                 if future is not None:
                     future.result()
-                # print(f"Function task returned: {result}")
-        except Exception as e:
-            print(f"Function task encountered an error: {e}")
+            # print(f"Function task returned: {result}")
+            except Exception as e:
+                print(f"Function task encountered an error: {e}")
 
 
 if __name__ == "__main__":
@@ -751,10 +835,11 @@ if __name__ == "__main__":
     )
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)
-
-    task_names = [get_table_space, get_db_and_charset, get_db_obj, count_table_culumns, user_table_space, get_tb_column,
-                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, summary, user_privilege, crontab,
-                  keywords, db_statistics, status_variables]
+    task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns, get_view,
+                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, user_privilege, keywords,
+                  db_statistics, status_variables, get_event_job, get_triggers, get_procedure, get_function]
     start = time.time()
+    get_db_and_charset()
     main(task_names)
+    summary()
     print(f'耗时: {time.time() - start:.2f} 秒')

@@ -15,6 +15,7 @@ lock = threading.Lock()
 BASE_PATH = str(Path(__file__).parent)
 timestands = time.strftime('%Y年%m月%d日%H%M%S', time.localtime())
 dir = f'result_{timestands}'
+EXCLUDE_DBS = ['information_schema', 'mysql', 'performance_schema', 'sys']
 
 
 class ConnectionPool:
@@ -141,7 +142,8 @@ def executor(data):
 def get_databases():
     sql = 'show databases;'
     databases = executor(sql)
-    dbs = [i.get('Database') for i in databases]
+    all_dbs = [i.get('Database') for i in databases]
+    dbs = [i for i in all_dbs if i not in EXCLUDE_DBS]
     return dbs
 
 
@@ -229,7 +231,7 @@ def get_db_obj():
 SQL> select 'database' type,schema_name db,count(*) cnt from information_schema.SCHEMATA  group by db
      union all
      select 'table' type,table_schema db,count(*) cnt from information_schema.TABLES a
-            where table_type='BASE TABLE' group by table_schema
+             group by table_schema
      union all
      select 'events' type,event_schema db,count(*) cnt from information_schema.EVENTS b
             group by event_schema
@@ -254,31 +256,39 @@ SQL> select 'database' type,schema_name db,count(*) cnt from information_schema.
     :return:
     """
     sql = """
-    select 'database' type,schema_name db,count(*) cnt from information_schema.SCHEMATA  group by db
-     union all
-     select 'table' type,table_schema db,count(*) cnt from information_schema.TABLES a
-            where table_type='BASE TABLE' group by table_schema
-     union all
-     select 'events' type,event_schema db,count(*) cnt from information_schema.EVENTS b
-            group by event_schema
-     union all
-     select 'triggers' type,trigger_schema db,count(*) cnt
-            from information_schema.TRIGGERS c group by trigger_schema
-     union all
-     select 'procedure' type,routine_schema db,count(*) cnt from information_schema.ROUTINES d
-            where routine_type='PROCEDURE' group by db
-     union all
-     select 'function' type,routine_schema db,count(*) cnt from information_schema.ROUTINES e
-            where routine_type='FUNCTION' group by db
-     union all
-     select 'views' type,table_schema db,count(*) cnt
-            from information_schema.views f group by table_schema
-     union all
-     select 'index' type,index_schema db,count(distinct index_name) cnt
-            from information_schema.STATISTICS g group by db
-     union all
-     select 'partition table' type,table_schema db,count(*) cnt from information_schema.PARTITIONS p
-            where partition_name is not null group by db;
+       select 'database' type,schema_name db,count(*) cnt from information_schema.SCHEMATA where schema_name not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+    group by db
+    union all
+    select 'table' type,table_schema db,count(*) cnt from information_schema.TABLES a 
+        where table_type != 'VIEW' and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys') 
+        group by table_schema
+    union all
+    select 'events' type,event_schema db,count(*) cnt from information_schema.EVENTS b where event_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by event_schema
+    union all
+    select 'triggers' type,trigger_schema db,count(*) cnt
+        from information_schema.TRIGGERS c where trigger_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by trigger_schema
+    union all
+    select 'procedure' type,routine_schema db,count(*) cnt from information_schema.ROUTINES d
+        where routine_type='PROCEDURE' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by db
+    union all
+    select 'function' type,routine_schema db,count(*) cnt from information_schema.ROUTINES e
+        where routine_type='FUNCTION' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by db
+    union all
+    select 'views' type,table_schema db,count(*) cnt
+        from information_schema.views f where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by table_schema
+    union all
+    select 'index' type,index_schema db,count(distinct index_name) cnt
+        from information_schema.STATISTICS g  where index_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+        group by db
+    union all
+    select 'partition table' type,table_schema db,count(*) cnt from information_schema.PARTITIONS p
+     where  partition_name is not null and  table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+     group by db;
     """
     data = executor(sql)
     # print(data)
@@ -298,7 +308,8 @@ SQL> select table_name,table_rows from information_schema.tables
     for db in dbs:
         sql = f"""
         select table_name,table_rows from information_schema.tables
-        where TABLE_SCHEMA = '{db}' order by table_rows desc;"""
+        where TABLE_SCHEMA = '{db}' and table_type != 'VIEW' order by table_rows desc;
+        """
         data = executor(sql)
         # print(data)
         temp_sql = f'db--table--sql: {db}-- -- {sql}'
@@ -435,7 +446,8 @@ def get_primary_key_and_foreige_key():
       o.table_name = t.table_name
       and t.constraint_name = o.constraint_name
     where
-      o.constraint_schema != 'mysql' and o.constraint_schema != 'sys';
+      o.constraint_schema != 'mysql' and o.constraint_schema != 'sys' and o.constraint_schema != 'performance_schema' and o.constraint_schema != 'information_schema'
+        order by o.constraint_schema
     '''
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: -- -- {sql}'
@@ -450,38 +462,38 @@ def summary():
     sql = """
     select '数据库版本' type,@@version cnt
      union all
-     select '数据库' type,count(*) cnt from information_schema.SCHEMATA  
+     select '数据库' type,count(*) cnt from information_schema.SCHEMATA   where schema_name not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '表' type,count(*) cnt from information_schema.TABLES a
-            where table_type='BASE TABLE' 
+            where table_type != 'VIEW' and  table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys') 
      union all
-     select '定时作业' type,count(*) cnt from information_schema.EVENTS b
+     select '定时作业' type,count(*) cnt from information_schema.EVENTS b where event_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
             
      union all
      select '触发器' type,count(*) cnt
-            from information_schema.TRIGGERS c 
+            from information_schema.TRIGGERS c  where trigger_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '存储过程' type,count(*) cnt from information_schema.ROUTINES d
-            where routine_type='PROCEDURE' 
+            where routine_type='PROCEDURE' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '函数' type,count(*) cnt from information_schema.ROUTINES e
-            where routine_type='FUNCTION' 
+            where routine_type='FUNCTION' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '视图' type,count(*) cnt
-            from information_schema.views f 
+            from information_schema.views f  where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '索引' type,count(distinct index_name) cnt
-            from information_schema.STATISTICS g 
+            from information_schema.STATISTICS g  where index_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all
      select '分区表' type,count(*) cnt from information_schema.PARTITIONS p
-            where partition_name is not null 
+            where partition_name is not null and  table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all 
      select  '总行数' type, SUM(table_rows) as cnt
      from information_schema.TABLES
-     where table_type='BASE TABLE'
+     where table_type != 'VIEW' and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all 
      select '总表空间大小' type,concat(round(sum((data_length + index_length)/1024/1024),2),'MB') as cnt from
-     information_schema.TABLES
+     information_schema.TABLES where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
      union all 
      select '时区' type, @@global.time_zone as cnt
      union all 
@@ -538,6 +550,7 @@ def keywords():
     """
     data = pool.executor(sql)
     tables = {i.get('Tables_in_information_schema') for i in data}
+    # 判断是否有关键字表
     if 'keywords' in tables or 'KEYWORDS' in tables:
         data1 = pool.executor(sql1)
         temp_sql = f'db--table--sql: -- -- {sql1}'
@@ -549,7 +562,7 @@ def db_statistics():
     数据库的统计信息
     :return:
     """
-    sql = "SELECT * FROM  information_schema.statistics"
+    sql = "SELECT * FROM  information_schema.statistics where index_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: -- -- {sql}'
     write_csv('数据统库计信息.csv', [(data, temp_sql)])
@@ -576,7 +589,7 @@ def get_event_job():
     show create event idc.event_one
     :return:
     """
-    sql = 'select event_schema,event_name from information_schema.events'
+    sql = "select event_schema,event_name from information_schema.events where event_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     jobs = pool.executor(sql)
     events = []
     for i in jobs:
@@ -596,7 +609,7 @@ def get_triggers():
     show create trigger trigger_one
     :return:
     """
-    sql = 'select trigger_schema,trigger_name from information_schema.triggers'
+    sql = "select trigger_schema,trigger_name from information_schema.triggers where trigger_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     triggers = pool.executor(sql)
     res = []
     for i in triggers:
@@ -616,7 +629,7 @@ def get_procedure():
     show create procedure  idc.get_data
     :return:
     """
-    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='PROCEDURE'"
+    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='PROCEDURE' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     procedures = pool.executor(sql)
     res = []
     for i in procedures:
@@ -635,7 +648,7 @@ def get_function():
     show create function idc.func_1
     :return:
     """
-    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='FUNCTION'"
+    sql = "select routine_schema,routine_name from information_schema.routines  where routine_type='FUNCTION' and routine_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     funcs = pool.executor(sql)
     res = []
     for i in funcs:
@@ -654,7 +667,7 @@ def get_view():
     show create view idc.view_one
     :return:
     """
-    sql = "select table_schema,table_name from information_schema.views"
+    sql = "select table_schema,table_name from information_schema.views where table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')"
     funcs = pool.executor(sql)
     res = []
     for i in funcs:
@@ -711,29 +724,6 @@ SQL> SELECT DB_NAME,CHAR_SET,TIME_ZONE,ONLINE FROM DBA_DATABASES WHERE DB_NAME='
         sql = f"SELECT DB_NAME,CHAR_SET,TIME_ZONE,ONLINE FROM DBA_DATABASES WHERE DB_NAME='{db}';"
         data = pool.executor(sql)
         # print(data)
-
-
-# try:
-#     sql = "show variables like 'innodb_file_per_table';"
-# print('数据库表空间模式')
-# executor(sql)
-# except Exception as e:
-#     print("Error:", e)
-#
-# finally:
-#     # 关闭所有连接
-#     pool.close_all_connections()
-
-# get_table_space()
-# get_db_and_charset()
-# get_db_obj()
-# count_table_culumns()
-# user_table_space()
-# get_tb_column()
-# get_db_columu_type_and_count()
-# get_primary_key_and_foreige_key()
-#
-# summary()
 
 
 # 迁移后数据
@@ -835,10 +825,11 @@ if __name__ == "__main__":
     )
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)
+    start = time.time()
     task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns, get_view,
                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, user_privilege, keywords,
                   db_statistics, status_variables, get_event_job, get_triggers, get_procedure, get_function]
-    start = time.time()
+
     get_db_and_charset()
     main(task_names)
     summary()

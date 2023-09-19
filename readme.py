@@ -1,8 +1,11 @@
 # 打包  pyinstaller --onefile --hidden-import pygame .\firework.py
 
-
+# --windows
 # pyinstaller -c -F --hidden-import=altgraph --hidden-import=lib --hidden-import=pefile --hidden-import=PyMySQL  --hidden-import=pywin32-ctypes   .\connection_pool.py
 # argparse
+
+# -- linux
+# pyinstaller -c -F  --hidden-import=PyMySQL    connection_pool.py
 
 # pyinstaller -c -F --hidden-import=argparse args.py
 # pyinstaller  .\connection_pool.spec

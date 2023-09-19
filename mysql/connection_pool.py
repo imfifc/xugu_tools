@@ -330,7 +330,7 @@ SQL> select table_schema,concat(round(sum((data_length + index_length)/1024/1024
     data = executor(sql)
     # print(data)
     temp_sql = f'db--table--sql: -- -- {sql}'
-    write_csv('5.表空间大小.csv', [(data, temp_sql)])
+    write_csv('5.每个库大小.csv', [(data, temp_sql)])
 
 
 def get_tb_column():
@@ -583,6 +583,36 @@ def status_variables():
     write_csv('show variables.csv', [(data2, temp_sql2)])
 
 
+def get_tablespace():
+    """
+    获取表空间大小
+    select
+        table_schema '库名',
+        table_name as '表名',
+        round(((data_length + index_length) / 1024 / 1024), 2) as '大小(MB)'
+    from
+        information_schema.tables
+    where
+         table_type != 'VIEW' and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys')
+    group by table_schema,table_name,'大小(MB)'
+    :return:
+    """
+    sql = """
+   select 
+        table_schema '库名',
+        table_name as '表名',
+        round((sum(data_length + index_length) / 1024 / 1024), 2) as '大小(MB)'
+    from 
+        information_schema.tables 
+    where 
+         table_type != 'VIEW' and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys') 
+    group by table_schema,table_name
+    """
+    datas = pool.executor(sql)
+    temp_sql = f'db--table--sql: -- -- {sql}'
+    write_csv('5.每张表大小.csv', [(datas, temp_sql)])
+
+
 def get_event_job():
     """
     show events
@@ -766,7 +796,7 @@ if __name__ == "__main__":
     | '_ ` _ \| | | / __|/ _` | |
     | | | | | | |_| \__ \ (_| | |
     |_| |_| |_|\__, |___/\__, |_|
-               |___/        |_|      power by xugu  v1.0
+               |___/        |_|      power by xugu  v1.1
 
         """
     print(program)
@@ -826,10 +856,10 @@ if __name__ == "__main__":
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)
     start = time.time()
-    task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns, get_view,
+    task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns,
                   get_db_columu_type_and_count, get_primary_key_and_foreige_key, user_privilege, keywords,
-                  db_statistics, status_variables, get_event_job, get_triggers, get_procedure, get_function]
-
+                  db_statistics, status_variables, get_tablespace, get_event_job, get_triggers, get_procedure,
+                  get_function, get_view]
     get_db_and_charset()
     main(task_names)
     summary()

@@ -22,7 +22,8 @@ def analyze_packet(packet, filename, port):
                     data = re.search(pattern, payload).group()
                     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     # print(payload)
-                    output = f"{time}  {ip}  {data.decode('utf-8')}"
+                    color_ip = f'\033[94m{ip}\033[0m'
+                    output = f"{time}  {color_ip}  {data.decode('utf-8')}"
                     print(output)
                     with open(filename, 'a+', newline='', encoding='utf-8') as f:
                         f.write(f'{output} \n')

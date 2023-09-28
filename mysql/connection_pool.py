@@ -774,29 +774,14 @@ def main(task_names):
                 print(f"Function task encountered an error: {e}")
 
 
-if __name__ == "__main__":
-    # 使用连接池
-    # db_host = '192.168.2.212'
-    # db_user = 'ecology'
-    # db_pwd = 'Weaver@2023'
-    # db_port = 3306
-    # db_name = 'ecology'
-    # db_charset = 'utf8'
-
-    # db_host = '127.0.0.1'
-    # db_user = 'root'
-    # db_pwd = '123456'
-    # db_port = 3306
-    # # db_name = 'idc'
-    # db_charset = 'utf8'
-
+def parse_args():
     program = rf"""
                                _
      _ __ ___  _   _ ___  __ _| |
     | '_ ` _ \| | | / __|/ _` | |
     | | | | | | |_| \__ \ (_| | |
     |_| |_| |_|\__, |___/\__, |_|
-               |___/        |_|      power by xugu  v1.1
+               |___/        |_|      power by xugu  v1.0.0
 
         """
     print(program)
@@ -842,6 +827,25 @@ if __name__ == "__main__":
     if host and port and user and password:
         print(f'host: {host} port: {port} user: {user} password: {password}')
 
+    return host, port, user, password
+
+
+if __name__ == "__main__":
+    # 使用连接池
+    # db_host = '192.168.2.212'
+    # db_user = 'ecology'
+    # db_pwd = 'Weaver@2023'
+    # db_port = 3306
+    # db_name = 'ecology'
+    # db_charset = 'utf8'
+
+    # db_host = '127.0.0.1'
+    # db_user = 'root'
+    # db_pwd = '123456'
+    # db_port = 3306
+    # # db_name = 'idc'
+    # db_charset = 'utf8'
+    host, port, user, password = parse_args()
     pool = ConnectionPool(
         max_connections=100,
         connection_params={

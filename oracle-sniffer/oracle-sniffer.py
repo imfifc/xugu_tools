@@ -46,6 +46,8 @@ def analyze_packet(packet, filename, port):
                     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     output = f"{time}  {ip}  {res}"
                     print(output)
+                    with open(filename, 'a+', newline='', encoding='utf-8') as f:
+                        f.write(f'{output} \n')
 
                 # if payload != b'\x00\x00\x00\x00\x00\x00':
                 #     pattern = re.compile(rb'[\x00-\x1F]+(.*)')
@@ -71,7 +73,7 @@ if __name__ == "__main__":
      / _ \| '__/ _` |/ __| |/ _ \_____/ __| '_ \| | |_| |_ / _ \ '__|
     | (_) | | | (_| | (__| |  __/_____\__ \ | | | |  _|  _|  __/ |   
      \___/|_|  \__,_|\___|_|\___|     |___/_| |_|_|_| |_|  \___|_|   
-                                                                       v1.0
+                                                                      power by xugu  v1.0.0
     """
     print(program)
     parser = argparse.ArgumentParser(

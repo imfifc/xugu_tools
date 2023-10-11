@@ -361,7 +361,7 @@ SQL> select data_type, count(*) cnt from information_schema.COLUMNS c
     for db in dbs:
         sql = f"""select data_type, count(*) cnt from information_schema.COLUMNS c
              where table_schema='{db}' group by data_type order by cnt desc;"""
-        data = pool.executor(sql)
+        data = executor(sql)
         # print(data)
         temp_sql = f'db--table--sql: {db}-- -- {sql}'
         write_csv('7.每个库字段类型及个数.csv', [(data, temp_sql)])
@@ -666,7 +666,7 @@ def get_procedure():
         db = i.get('ROUTINE_SCHEMA') or i.get('routine_schema')
         procedure_name = i.get('ROUTINE_NAME') or i.get('routine_name')
         sql2 = f'show create procedure `{db}`.`{procedure_name}`'
-        data = pool.executor(sql2)
+        data = executor(sql2)
         temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
         res.append((data, temp_sql2))
     write_csv('存储过程 show procedure status.csv', res)
@@ -685,7 +685,7 @@ def get_function():
         db = i.get('ROUTINE_SCHEMA') or i.get('routine_schema')
         func_name = i.get('ROUTINE_NAME') or i.get('routine_name')
         sql2 = f'show create function `{db}`.`{func_name}`'
-        data = pool.executor(sql2)
+        data = executor(sql2)
         temp_sql2 = f'db--table--sql: {db}-- -- {sql2}'
         res.append((data, temp_sql2))
     write_csv('函数 .csv', res)
@@ -861,10 +861,10 @@ if __name__ == "__main__":
     print(dir)
     start = time.time()
     task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns,
-                  get_db_columu_type_and_count, get_primary_key_and_foreige_key, user_privilege, keywords,
-                  db_statistics, status_variables, get_tablespace, get_event_job, get_triggers, get_procedure,
-                  get_function, get_view]
+                  user_privilege, keywords, get_procedure, get_function, get_view,get_db_columu_type_and_count,
+                  db_statistics, status_variables, get_tablespace, get_event_job, get_triggers]
     get_db_and_charset()
+    # get_primary_key_and_foreige_key()
     main(task_names)
     summary()
     print(f'耗时: {time.time() - start:.2f} 秒')

@@ -37,13 +37,27 @@ pyinstaller -c -F --hidden-import=cx_Oracle --clean --add-binary "D:\llearn\xugu
 linux
 
 ```
-pyinstaller -c -F --clean --hidden-import=cx_Oracle --add-binary="./instantclient_18_5/lib/*:."  oracle_connect.py
+pyinstaller -c -F --clean --hidden-import=cx_Oracle --add-binary="./instantclient_19_20/lib/*:."  oracle_connect.py
 
 ```
 
 
 linux instantclient 下载:
 https://download.oracle.com/otn_software/linux/instantclient/1920000/instantclient-basiclite-linux.x64-19.20.0.0.0dbru.zip
+解压后把所有的so文件 放在这个目录下， 然后用pyinstaller打包
+instantclient_19_20/lib/
+(venv) [root@oracle-centos7-instance1 lib]# tree
+.
+├── libclntshcore.so.19.1
+├── libclntsh.so.19.1
+├── libipc1.so
+├── libmql1.so
+├── libnnz19.so
+├── libocci.so.19.1
+├── libociicus.so
+├── libocijdbc19.so
+└── liboramysql19.so
+
 导出为环境变量:
 export LD_LIBRARY_PATH=/tmp/xugu/oracle/instantclient_19_20:$LD_LIBRARY_PATH  
 

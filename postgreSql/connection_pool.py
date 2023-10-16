@@ -2,6 +2,7 @@ import argparse
 import csv
 import os
 import queue
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -28,7 +29,10 @@ class ConnectionPool:
             self._pool.put(connection)
 
     def _create_connection(self):
-        return psycopg2.connect(**self.connection_params)
+        try:
+            return psycopg2.connect(**self.connection_params)
+        except Exception as e:
+            print(e)
 
     def get_connection(self):
         try:
@@ -394,6 +398,12 @@ def parse_args():
     verbose = args.verbose
 
     # 在这里可以根据解析的参数执行相应的操作
+    if len(sys.argv) == 1:
+        host = input("请输入ip: ")
+        port = input("请输入端口: ")
+        user = input("请输入用户: ")
+        password = input("请输入密码: ")
+        db = input("请输入数据库: ")
     if verbose:
         print("显示详细信息")
     if not host:
@@ -412,7 +422,7 @@ def parse_args():
         parser.print_help()
         raise Exception('没有输入数据库 !!!\n')
     if host and port and user and password and db:
-        print(f'host: {host} port: {port} user: {user} password: {password} db: {db}')
+        print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
 
     return host, port, user, password, db
 
@@ -460,4 +470,4 @@ if __name__ == '__main__':
     main(tasknames)
     summary()
     print(f'耗时: {time.time() - start:.2f} 秒')
-
+    input('\nPress Enter to exit…')

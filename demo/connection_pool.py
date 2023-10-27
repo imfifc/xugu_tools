@@ -241,19 +241,30 @@ def get_foreign_key_and_primary_key():
     :return:
     """
     sql = """
-    select ind.db_id,sch.schema_name,obj.obj_name ,ind.cons_name,
-    case when cons_type='f' then '外键'
-    when cons_type='r' then '引用外键'
-    when cons_type='c' then '值检查'
-    when cons_type='d' then '默认值'
-    when cons_type='u' then '唯一值'
-    when cons_type='p' then '主键'
-    end cons_type
-    from sys_constraints ind,sys_objects obj,sys_schemas sch
-    where ind.table_id=obj.obj_id
-    and ind.db_id=obj.db_id
-    and  obj.schema_id=sch.schema_id
-    and  obj.db_id=sch.db_id
+    select
+        db.db_name as 数据库名,
+        ch.schema_name as 模式名,
+        t.table_name as 表名,
+        index_name as 索引名,
+        (case index_type
+              when 0 then 'btree'
+          when 1 then 'rtree'
+          when 2 then 'fulltext'
+          when 3 then 'bitmap'
+          when 4 then 'union'
+        end) as 索引类型,
+        is_primary as 是否是主键索引,
+        is_unique as 是否是唯一索引,
+        field_num as 索引字段数,
+        replace(keys,  '"',  '') as 索引字段
+      from
+        dba_indexes as c
+      left join dba_tables t on
+        c.table_id = t.table_id
+      left join dba_databases db on
+        c.db_id = db.db_id
+      left join dba_schemas ch on
+        ch.user_id = t.user_id and ch.db_id = db.db_id
     """
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'

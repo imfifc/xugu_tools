@@ -246,7 +246,7 @@ def create_temp_proc(num):
     """
     sql2 = 'create table  PRODUCTS_TEST as select * from products;'
     pool.executor("truncate table SYSDBA.PRODUCTS_TEST ")
-    show('SYSDBA.PRODUCTS_TEST')
+    # show('SYSDBA.PRODUCTS_TEST')
     pool.executor(sql)
     pool.call_proc('SP_insert_356_DATA')
 
@@ -273,12 +273,9 @@ def create_procduct_test():
 def show(table):
     sql = f'select count(*) from {table}'
     data = cur.execute(sql)
-    row = cur.fetchall()
-    for i in row:
-        print(i)
+    row = cur.fetchone()
+    print(f'{table} : {row}')
 
-
-# todo 加索引，清除表及数据,先清除事务,arm随机函数
 
 # 多进程调用
 def mul_proc_executor():
@@ -417,20 +414,18 @@ def multi_process(n, proc_name, *args):
         process.join()
 
 
-# def onece_proc():
-#     tmp_n = int(input("请输入临时表行数: "))
-#     proc_nums = int(input("请输入临时表插入正式表的次数: "))
-#     parallel_n = int(input("请输入并发数: "))
-#     create_temp_proc(tmp_n)
-#     # pool.call_proc('SP_insert_356_DATA')
-#     create_product_proc(proc_nums)
-#     start = time.time()
-#     multi_process(parallel_n, 'sp_insert_data')
-#     # show2()
-#     end = time.time() - start
-#     print(f'耗时{end:.2f}秒', f'tps:{(tmp_n * parallel_n * proc_nums / end):.2f} 行/s')
-#
-#     show2()
+def onece_proc():
+    tmp_n = int(input("请输入临时表行数: "))
+    proc_nums = int(input("请输入临时表插入正式表的次数: "))
+    parallel_n = int(input("请输入并发数: "))
+    create_temp_proc(tmp_n)
+    create_product_proc(proc_nums)
+    start = time.time()
+    multi_process(parallel_n, 'sp_insert_data')
+    end = time.time() - start
+    show('products')
+    show('products_test')
+    print(f'耗时{end:.2f}秒', f'tps:{(tmp_n * parallel_n * proc_nums / end):.2f} 行/s')
 
 
 if __name__ == '__main__':
@@ -460,26 +455,14 @@ if __name__ == '__main__':
     # 目的： 从临时表中取出1w数据到正式表
     rebuild_tables()
     while True:
-        tmp_n = int(input("请输入临时表行数: "))
-        proc_nums = int(input("请输入临时表插入正式表的次数: "))
-        parallel_n = int(input("请输入并发数: "))
-        create_temp_proc(tmp_n)
-        create_product_proc(proc_nums)
-        start = time.time()
-        multi_process(parallel_n, 'sp_insert_data')
-        end = time.time() - start
-        print(f'耗时{end:.2f}秒', f'tps:{(tmp_n * parallel_n * proc_nums / end):.2f} 行/s')
-        show('products')
-        show('products_test')
-
-    # onece_proc()
-    # flag = input("是否需要清除表，重建，请输入Y/N ")
-    # print(flag)
-    # if flag == 'Y' or flag == 'y':
-    #     rebuild_tables()
-    # exit = input('退出请输入q/Q ')
-    # if exit:
-    #     break
+        onece_proc()
+        flag = input("是否需要清除表重建，(默认不重建) 请输入Y/N: ")
+        if flag == 'Y' or flag == 'y':
+            rebuild_tables()
+            print('已重建表')
+        # exit = input('退出请输入q/Q ')
+        # if exit:
+        #     break
 
 # 1000w : 480s
 

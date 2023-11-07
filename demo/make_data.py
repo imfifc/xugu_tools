@@ -9,8 +9,67 @@ from multiprocessing import freeze_support
 
 import xgcondb
 
-conn = xgcondb.connect(host="10.28.23.174", port="5138", database="SYSTEM", user="SYSDBA", password="SYSDBA",
-                       charset="utf8")
+
+# 参数解析前置，多进程才能不报错
+def parse_args():
+    parser = argparse.ArgumentParser(
+        # description='这是一个数据库环境采集工具',
+        prefix_chars='-'
+    )
+    # 添加位置参数
+    # parser.add_argument('input_file', help='输入文件的路径')
+    # 添加可选参数
+    # parser.add_argument('-o', '--output', help='输出文件的路径')
+    parser.add_argument('-H', '--host', help='输入数据库ip地址')
+    parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int, default=5138)
+    parser.add_argument('-u', '--user', help='输入数据库 用户')
+    parser.add_argument('-p', '--pwd', help='输入数据库密码')
+    parser.add_argument('-d', '--database_name', help='输入数据库名')
+    # 添加标志参数
+    parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
+    args = parser.parse_args()
+    # 访问解析后的参数
+    # input_file = args.input_file
+    # output_file = args.output
+    host = args.host
+    port = args.port
+    user = args.user
+    password = args.pwd
+    db = args.database_name
+    verbose = args.verbose
+
+    # 在这里可以根据解析的参数执行相应的操作
+    if len(sys.argv) == 1:
+        host = input("请输入ip: ")
+        port = input("请输入端口: ")
+        user = input("请输入用户: ")
+        password = input("请输入密码: ")
+        db = input("请输入数据库: ")
+    if verbose:
+        print("显示详细信息")
+    if not host:
+        parser.print_help()
+        raise Exception('没有输入ip !!!\n')
+    if not port:
+        parser.print_help()
+        raise Exception('没有输入port !!!\n')
+    if not user:
+        parser.print_help()
+        raise Exception('没有输入user !!!\n')
+    if not password:
+        parser.print_help()
+        raise Exception('没有输入password !!!\n')
+    if not db:
+        parser.print_help()
+        raise Exception('没有输入数据库 !!!\n')
+    # if host and port and user and password and db:
+    #     print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
+
+    return host, port, user, password, db
+
+
+db_host, db_port, db_user, db_pwd, db_name = parse_args()
+conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
 cur = conn.cursor()
 
 
@@ -297,63 +356,6 @@ def mul_proc_executor():
         #     print(f"Task result: {result}")
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        # description='这是一个数据库环境采集工具',
-        prefix_chars='-'
-    )
-    # 添加位置参数
-    # parser.add_argument('input_file', help='输入文件的路径')
-    # 添加可选参数
-    # parser.add_argument('-o', '--output', help='输出文件的路径')
-    parser.add_argument('-H', '--host', help='输入数据库ip地址')
-    parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int, default=5138)
-    parser.add_argument('-u', '--user', help='输入数据库 用户')
-    parser.add_argument('-p', '--pwd', help='输入数据库密码')
-    parser.add_argument('-d', '--database_name', help='输入数据库名')
-    # 添加标志参数
-    parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
-    args = parser.parse_args()
-    # 访问解析后的参数
-    # input_file = args.input_file
-    # output_file = args.output
-    host = args.host
-    port = args.port
-    user = args.user
-    password = args.pwd
-    db = args.database_name
-    verbose = args.verbose
-
-    # 在这里可以根据解析的参数执行相应的操作
-    if len(sys.argv) == 1:
-        host = input("请输入ip: ")
-        port = input("请输入端口: ")
-        user = input("请输入用户: ")
-        password = input("请输入密码: ")
-        db = input("请输入数据库: ")
-    if verbose:
-        print("显示详细信息")
-    if not host:
-        parser.print_help()
-        raise Exception('没有输入ip !!!\n')
-    if not port:
-        parser.print_help()
-        raise Exception('没有输入port !!!\n')
-    if not user:
-        parser.print_help()
-        raise Exception('没有输入user !!!\n')
-    if not password:
-        parser.print_help()
-        raise Exception('没有输入password !!!\n')
-    if not db:
-        parser.print_help()
-        raise Exception('没有输入数据库 !!!\n')
-    if host and port and user and password and db:
-        print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
-
-    return host, port, user, password, db
-
-
 def parse_str(input_string):
     # input_string = "123 45.67 abc 89.0 def 10 0"
     # 使用正则表达式匹配整数、浮点数和字符串(用|)对多个正则表达式区分
@@ -414,7 +416,7 @@ def multi_process(n, proc_name, *args):
         process.join()
 
 
-def onece_proc():
+def once_proc():
     tmp_n = int(input("请输入临时表行数: "))
     proc_nums = int(input("请输入临时表插入正式表的次数: "))
     parallel_n = int(input("请输入并发数: "))
@@ -431,14 +433,12 @@ def onece_proc():
 if __name__ == '__main__':
     print(xgcondb.version())
     freeze_support()
-
     # db_host = '10.28.23.174'
     # db_port = 5138
     # db_user = 'SYSDBA'
     # db_pwd = 'SYSDBA'
     # db_name = 'SYSTEM'
 
-    db_host, db_port, db_user, db_pwd, db_name = parse_args()
     pool = ConnectionPool(
         max_connections=100,
         connection_params={
@@ -455,7 +455,7 @@ if __name__ == '__main__':
     # 目的： 从临时表中取出1w数据到正式表
     rebuild_tables()
     while True:
-        onece_proc()
+        once_proc()
         flag = input("是否需要清除表重建，(默认不重建) 请输入Y/N: ")
         if flag == 'Y' or flag == 'y':
             rebuild_tables()
@@ -463,8 +463,3 @@ if __name__ == '__main__':
         # exit = input('退出请输入q/Q ')
         # if exit:
         #     break
-
-# 1000w : 480s
-
-# 1w  10个插入  100个任务 总计1000w数据
-# 1w 20

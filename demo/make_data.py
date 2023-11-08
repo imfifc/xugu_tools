@@ -10,6 +10,12 @@ from multiprocessing import freeze_support
 import xgcondb
 
 
+def get_cur(db_host, db_port, db_user, db_pwd, db_name):
+    conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
+    cur = conn.cursor()
+    return cur
+
+
 # 参数解析前置，多进程才能不报错
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -66,11 +72,6 @@ def parse_args():
     #     print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
 
     return host, port, user, password, db
-
-
-db_host, db_port, db_user, db_pwd, db_name = parse_args()
-conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
-cur = conn.cursor()
 
 
 class ConnectionPool:
@@ -330,6 +331,7 @@ def create_procduct_test():
 
 
 def show(table):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f'select count(*) from {table}'
     data = cur.execute(sql)
     row = cur.fetchone()
@@ -392,22 +394,25 @@ def rebuild_tables():
 
 
 def execute_proc_args(name):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     # print(cur.callproc("test_in", (20,), (1,)))
     cur.callproc(name, (200000,), (1,))
 
 
-def execute_proc(name, *args):
+def execute_proc(name, db_host, db_port, db_user, db_pwd, db_name, *args):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     if len(args):
-        # print(name, tuple(args), tuple(1 for i in range(len(args))))
-        cur.callproc(name, tuple(args), tuple(1 for i in range(len(args))))
+        cur.callproc(name, tuple(args), tuple(1 for _ in range(len(args))))
     else:
         cur.callproc(name)
 
 
-def multi_process(n, proc_name, *args):
+# 多进程调用
+def multi_process(n, proc_name, db_host, db_port, db_user, db_pwd, db_name, *args):
     processes = []
     for i in range(n):
-        process = multiprocessing.Process(target=execute_proc, args=(proc_name, *args))
+        process = multiprocessing.Process(target=execute_proc,
+                                          args=(proc_name, db_host, db_port, db_user, db_pwd, db_name, *args))
         processes.append(process)
     for process in processes:
         process.start()
@@ -423,7 +428,7 @@ def once_proc():
     create_temp_proc(tmp_n)
     create_product_proc(proc_nums)
     start = time.time()
-    multi_process(parallel_n, 'sp_insert_data')
+    multi_process(parallel_n, 'sp_insert_data', db_host, db_port, db_user, db_pwd, db_name)
     end = time.time() - start
     show('products')
     show('products_test')
@@ -438,7 +443,7 @@ if __name__ == '__main__':
     # db_user = 'SYSDBA'
     # db_pwd = 'SYSDBA'
     # db_name = 'SYSTEM'
-
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
     pool = ConnectionPool(
         max_connections=100,
         connection_params={
@@ -460,6 +465,6 @@ if __name__ == '__main__':
         if flag == 'Y' or flag == 'y':
             rebuild_tables()
             print('已重建表')
-        # exit = input('退出请输入q/Q ')
-        # if exit:
-        #     break
+        q = input('\nPress q to exit…or continue')
+        if q == 'q' or q == 'Q':
+            break

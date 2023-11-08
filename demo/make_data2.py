@@ -253,12 +253,12 @@ if __name__ == '__main__':
         end = time.time() - start
         show('products')
         print(f'耗时{end:.2f}秒', f'tps:{(parallel_n * proc_nums / end):.2f} 行/s')
-        q = input('\nPress q to exit…')
-        if q == 'q' or q == 'Q':
-            break
         flag = input("是否需要清除表重建，(默认不重建) 请输入Y/N: ")
         if flag == 'Y' or flag == 'y':
             drop_tb('products')
             create_products_tb(20)
             create_proc()
             print('已重建表')
+        q = input('\nPress q to exit…')
+        if q == 'q' or q == 'Q':
+            break

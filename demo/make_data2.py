@@ -8,6 +8,12 @@ from multiprocessing import freeze_support
 import xgcondb
 
 
+def get_cur(db_host, db_port, db_user, db_pwd, db_name):
+    conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
+    cur = conn.cursor()
+    return cur
+
+
 # 用于数据库中已存在的存储过程，进行造数
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -66,28 +72,10 @@ def parse_args():
     return host, port, user, password, db
 
 
-db_host, db_port, db_user, db_pwd, db_name = parse_args()
-conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
-cur = conn.cursor()
-
-
-def execute_proc(name, *args):
-    if len(args):
-        cur.callproc(name, tuple(args), tuple(1 for i in range(len(args))))
-    else:
-        cur.callproc(name)
-
-
 def execute_proc_args(name):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     # print(cur.callproc("test_in", (20,), (1,)))
     cur.callproc(name, (200000,), (1,))
-
-
-def show(table):
-    cur.execute(f"select count(*) from {table}")
-    row = cur.fetchall()
-    for i in row:
-        print(i)
 
 
 def parse_str(input_string):
@@ -108,7 +96,8 @@ def parse_str(input_string):
 
 
 def create_products_tb(hotspot):
-    sql2 = f"""
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = f"""
     create table if not exists sysdba.products(
     product_no varchar(50) not null,
     product_name varchar(200),
@@ -119,10 +108,11 @@ def create_products_tb(hotspot):
     product_type varchar(50)
     )HOTSPOT {hotspot};
     """
-    cur.execute(sql2)
+    cur.execute(sql)
 
 
 def create_package():
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     pkg_header = """
     CREATE OR REPLACE PACKAGE random IS
       FUNCTION value(min_value bigint, max_value bigint) return bigint;
@@ -158,6 +148,7 @@ def create_package():
 
 
 def create_proc():
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = """
     create or replace procedure p_test(insert_num in int) as
     declare
@@ -208,6 +199,7 @@ def create_proc():
 
 
 def show(table):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f'select count(*) from {table}'
     data = cur.execute(sql)
     row = cur.fetchone()
@@ -215,15 +207,25 @@ def show(table):
 
 
 def drop_tb(table):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f"drop table if exists {table} cascade"
     cur.execute(sql)
 
 
+def execute_proc(name, db_host, db_port, db_user, db_pwd, db_name, *args):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    if len(args):
+        cur.callproc(name, tuple(args), tuple(1 for i in range(len(args))))
+    else:
+        cur.callproc(name)
+
+
 # 多进程调用
-def multi_process(n, proc_name, *args):
+def multi_process(n, proc_name, db_host, db_port, db_user, db_pwd, db_name, *args):
     processes = []
     for i in range(n):
-        process = multiprocessing.Process(target=execute_proc, args=(proc_name, *args))
+        process = multiprocessing.Process(target=execute_proc,
+                                          args=(proc_name, db_host, db_port, db_user, db_pwd, db_name, *args))
         processes.append(process)
     for process in processes:
         process.start()
@@ -233,21 +235,21 @@ def multi_process(n, proc_name, *args):
 
 
 if __name__ == '__main__':
-    multiprocessing.freeze_support()
+    freeze_support()
     print(xgcondb.version())
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
+
     create_package()
     create_products_tb(20)
     create_proc()
 
     while True:
         start = time.time()
-        proc_name = input("请输入存储过程名(默认p_test):")
-        if not proc_name.strip():
-            proc_name = 'p_test'
-        proc_nums = int(input("请输入存储过程的参数:"))
+        proc_name = input("请输入存储过程名(默认p_test):").strip() or 'p_test'
+        proc_nums = int(input("请输入存储过程的参数(默认10000):")) or 10000
         parallel_n = int(input("请输入并发数:"))
         # proc_nums = parse_str(proc_nums)
-        multi_process(parallel_n, proc_name, proc_nums)
+        multi_process(parallel_n, proc_name, db_host, db_port, db_user, db_pwd, db_name, proc_nums)
         end = time.time() - start
         show('products')
         print(f'耗时{end:.2f}秒', f'tps:{(parallel_n * proc_nums / end):.2f} 行/s')

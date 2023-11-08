@@ -111,7 +111,7 @@ def create_products_tb(hotspot):
     cur.execute(sql)
 
 
-def create_package():
+def create_random_package():
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     pkg_header = """
     CREATE OR REPLACE PACKAGE random IS
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     print(xgcondb.version())
     db_host, db_port, db_user, db_pwd, db_name = parse_args()
 
-    create_package()
+    create_random_package()
     create_products_tb(20)
     create_proc()
 

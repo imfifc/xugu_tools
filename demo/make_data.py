@@ -157,6 +157,40 @@ class ConnectionPool:
 
 
 # 存储过程中不能有注释
+def create_random_package():
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    pkg_header = """
+    CREATE OR REPLACE PACKAGE random IS
+      FUNCTION value(min_value bigint, max_value bigint) return bigint;
+      FUNCTION string(length IN NUMBER) RETURN varchar2;
+    END;
+    """
+    pkg_body = """
+    CREATE OR REPLACE PACKAGE BODY random as
+        function value(min_value bigint, max_value bigint) return bigint as
+            div  bigint := power(2, 31)-1;
+            tmp_value  double;
+            ret_value  bigint;
+        begin
+            tmp_value := to_number(abs(rand())) / div * (max_value - min_value);
+            ret_value := round(tmp_value, 0) + min_value;
+            return ret_value;
+        end;
+
+        FUNCTION string(length IN NUMBER) RETURN VARCHAR2 IS
+           characters VARCHAR2(62) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+           random_string VARCHAR2(32767) := '';
+        BEGIN
+           FOR i IN 1..length LOOP
+              random_string := random_string || SUBSTR(characters, CEIL(rand_value(1, 62)), 1);
+           END LOOP;
+           RETURN random_string;
+        end;
+
+    end random;
+    """
+    cur.execute(pkg_header)
+    cur.execute(pkg_body)
 
 
 def drop_tb(table):
@@ -273,8 +307,8 @@ def create_temp_proc(num):
      for i in 1..{num} loop 
     INSERT INTO SYSDBA.PRODUCTS_TEST
                 VALUES ( sys_uuid AS product_no 
-                       , DBMS_RANDOM.STRING('x', 8) AS product_name 
-                       , CASE TRUNC(DBMS_RANDOM.VALUE(1, 6)) 
+                       , random.STRING(8) AS product_name 
+                       , CASE TRUNC(random.VALUE(1, 6)) 
                              when 1 then '零食大礼包A'
                              when 2 then '零食大礼包B'
                              when 3 then '零食大礼包C'
@@ -284,7 +318,7 @@ def create_temp_proc(num):
                              END AS product_introduce
                         , to_date('2017-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss')+i AS manufacture_date
                         , to_date('2018-04-01 00:00:00','yyyy-mm-dd hh24:mi:ss')+i AS sell_dates
-                       , CASE TRUNC(DBMS_RANDOM.VALUE(1, 6)) 
+                       , CASE TRUNC(random.VALUE(1, 6)) 
                              when 1 then '北京'
                              when 2 then '上海'
                              when 3 then '深圳'
@@ -292,7 +326,7 @@ def create_temp_proc(num):
                              when 5 then '成都'
                              else  '武汉'
                              END address
-                       ,CASE TRUNC(DBMS_RANDOM.VALUE(1, 6)) 
+                       ,CASE TRUNC(random.VALUE(1, 6)) 
                              when 1 then '食品'
                              when 2 then '饰品'
                              when 3 then '汽车'
@@ -455,6 +489,7 @@ if __name__ == '__main__':
             "charset": 'utf8',
         },
     )
+    create_random_package()
     pool.executor('set max_loop_num to 0')
     pool.executor('set max_trans_modify to 0')
     # 目的： 从临时表中取出1w数据到正式表

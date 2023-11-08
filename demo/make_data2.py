@@ -246,7 +246,7 @@ if __name__ == '__main__':
     while True:
         start = time.time()
         proc_name = input("请输入存储过程名(默认p_test):").strip() or 'p_test'
-        proc_nums = int(input("请输入存储过程的参数(默认10000):")) or 10000
+        proc_nums = int(input("请输入存储过程的参数(默认10000):") or 10000)
         parallel_n = int(input("请输入并发数:"))
         # proc_nums = parse_str(proc_nums)
         multi_process(parallel_n, proc_name, db_host, db_port, db_user, db_pwd, db_name, proc_nums)

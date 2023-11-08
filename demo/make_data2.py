@@ -259,6 +259,6 @@ if __name__ == '__main__':
             create_products_tb(20)
             create_proc()
             print('已重建表')
-        q = input('\nPress q to exit…')
+        q = input('\nPress q to exit… or continue')
         if q == 'q' or q == 'Q':
             break

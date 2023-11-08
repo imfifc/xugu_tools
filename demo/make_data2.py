@@ -136,7 +136,7 @@ def create_random_package():
            random_string VARCHAR2(32767) := '';
         BEGIN
            FOR i IN 1..length LOOP
-              random_string := random_string || SUBSTR(characters, CEIL(rand_value(1, 62)), 1);
+              random_string := random_string || SUBSTR(characters, CEIL(random.value(1, 62)), 1);
            END LOOP;
            RETURN random_string;
         end;

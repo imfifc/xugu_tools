@@ -1,0 +1,176 @@
+string = """
+SYS_DATABASES
+SYS_SCHEMAS
+SYS_USERS
+SYS_ROLE_MEMBERS
+SYS_ACLS
+SYS_OBJECTS
+SYS_TABLES
+SYS_PARTIS
+SYS_SUBPARTIS
+SYS_COLUMNS
+SYS_LOBS
+SYS_CONSTRAINTS
+SYS_INDEXES
+SYS_IDX_PARTIS
+SYS_IDX_SUBPARTIS
+SYS_VIEWS
+SYS_SEQUENCES
+SYS_PROCEDURES
+SYS_PACKAGES
+SYS_TRIGGERS
+SYS_DOMAINS
+SYS_TYPES
+SYS_JOBS
+SYS_SNAPSHOTS
+SYS_SNAPSRCS
+SYS_SYNONYMS
+SYS_DEPENDS
+SYS_DBLINKS
+SYS_RECYCLER
+SYS_MODIFY_LOGS
+SYS_SUBSCRIBERS
+SYS_VIEW_COLUMNS
+SYS_IMPORT_LOGS
+SYS_STREAMS
+SYS_PROFILES
+SYS_VPD_POLICIES
+SYS_POLICIES
+SYS_LEVELS
+SYS_CATEGORIES
+SYS_AUDIT_DEFS
+SYS_AUDIT_RULES
+SYS_BACKUP_PLANS
+SYS_BACKUP_ITEMS
+DUAL
+SYS_SYSTEM_VIEWS
+SYS_ERR_DEFS
+SYS_SYSTEM_TABLES
+SYS_SESSIONS
+SYS_THD_STATUS
+SYS_DATATYPES
+SYS_OPERATORS
+SYS_METHODS
+SYS_VARS
+SYS_CHARSETS
+SYS_CTL_VARS
+SYS_CLUSTERS
+SYS_GSTORES
+SYS_LGSTORES
+SYS_STORES
+SYS_FREE_STORES
+SYS_DROPPED_STORES
+SYS_DELAY_STORES
+SYS_TABLESPACES
+SYS_DATAFILES
+SYS_GLOCKS
+SYS_GOWNERS
+SYS_GWAITERS
+SYS_LOCKS
+SYS_LOWNERS
+SYS_LWAITERS
+SYS_TRANS
+SYS_RUN_INFO
+SYS_MONITORS
+SYS_ERROR_LOG
+SYS_EVENT_LOG
+SYS_TRACE_LOG
+SYS_FREE_GSTORES
+SYS_THD_SESSION
+SYS_OV_STORES
+SYS_MEM_STATUS
+SYS_FORBIDDEN_IPS
+SYS_BLACK_WHITE_LIST
+SYS_COMMAND_LOG
+SYS_KEYWORDS
+SYS_ENCRYPTORS
+SYS_DT_CONVERT_LIST
+SYS_ALL_SESSIONS
+SYS_ALL_THD_STATUS
+SYS_ALL_STORES
+SYS_ALL_FREE_STORES
+SYS_ALL_DROPPED_STORES
+SYS_ALL_DELAY_STORES
+SYS_ALL_TABLESPACES
+SYS_ALL_DATAFILES
+SYS_ALL_LOCKS
+SYS_ALL_LOWNERS
+SYS_ALL_LWAITERS
+SYS_ALL_TRANS
+SYS_ALL_RUN_INFO
+SYS_ALL_MONITORS
+SYS_ALL_ERROR_LOG
+SYS_ALL_EVENT_LOG
+SYS_ALL_TRACE_LOG
+SYS_ALL_THD_SESSION
+SYS_ALL_OV_STORES
+SYS_ALL_MEM_STATUS
+SYS_ALL_FORBIDDEN_IPS
+SYS_ALL_BLACK_WHITE_LIST
+SYS_ALL_VARS
+SYS_ALL_COMMAND_LOG
+SYS_ALL_GLOCKS
+SYS_ALL_GOWNERS
+SYS_ALL_GWAITERS
+SYS_ALL_FREE_GSTORES
+"""
+
+string_b = """
+dba_databases
+dba_sessions
+dba_tablespaces
+dba_datafiles
+dba_schemas
+dba_users
+dba_roles
+dba_role_members
+dba_acls
+dba_tables
+dba_partis
+dba_subpartis
+dba_columns
+dba_constraints
+dba_indexes
+dba_idx_partis
+dba_idx_subpartis
+dba_lobs
+dba_views
+dba_view_columns
+dba_triggers
+dba_sequences
+dba_types
+dba_procedures
+dba_packages
+dba_synonyms
+dba_depends
+dba_dblinks
+dba_objects
+dba_jobs
+dba_methods
+dba_streams
+dba_subscribers
+dba_modify_logs
+dba_backup_plans
+dba_backup_items
+dba_policies
+"""
+res = string.splitlines()
+res = [i.lower() for i in res if i]
+# print(len(res))
+# print(res)
+
+res_b = string_b.splitlines()
+res_b = [i.lower() for i in res_b if i]
+# print(len(res))
+# print(res_b)
+
+result = []
+for i in res_b:
+    for j in res:
+        str_a = i.split('_')[-1]
+        str_b = j.split('_')[-1]
+        if str_a == str_b:
+            print(j,i)
+            result.append((i,j))
+
+print(result,len(result))

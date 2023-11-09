@@ -6,10 +6,10 @@ from pymysql.cursors import DictCursor
 # db_pwd = 'Weaver@2023'
 # db_port = 3306
 
-db_host = '127.0.0.1'
-db_user = 'root'
-db_pwd = '123456'
-db_port = 3306
+db_host = '47.111.139.249'
+db_user = 'zbridge'
+db_pwd = 'zbridge711@'
+db_port = 3307
 
 connection = pymysql.connect(host=db_host, user=db_user, password=db_pwd, port=db_port, charset='utf8')
 
@@ -58,4 +58,17 @@ def get_db_and_charset():
         executor(sql)
 
 
-get_db_and_charset()
+def func():
+    sql = """
+        SELECT
+                user,
+                host,
+                max_connections as '最大连接数',
+                max_user_connections as '最大用户连接数'
+              FROM mysql.user  
+    """
+    executor(sql)
+
+# get_table_space()
+# get_db_and_charset()
+func()

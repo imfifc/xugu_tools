@@ -71,24 +71,29 @@ def use_privilege_conn(sql):
 
 def write_csv(filename, data):
     """
-
+    data: [
+           (
+            [{
+                'Name': 'actionexecutelog',
+                'Engine': 'InnoDB',
+            }], "db--table--sql: ecology--actionexecutelog-- show table status from `ecology` like 'actionexecutelog';")]
     :param filename:
-    :param data: [(res, tmp_sql),(res, tmp_sql)...]  res:[{},{}...]
+    :param data: [(  [{}],temp_sql), ([],temp_sql) ]
     :return:
     """
+
     filename = os.path.join(dir, filename)
-    with open(filename, 'a+', newline='') as f:
-        if data[0][0]:
-            fieldnames = data[0][0][0].keys()
-            writer1 = csv.DictWriter(f, fieldnames=fieldnames)
-            write = csv.writer(f)
-            for i in data:
-                if i[0]:
-                    write.writerow([i[1]])
-                    fieldnames = i[0][0].keys()
-                    writer1.fieldnames = fieldnames
-                    writer1.writeheader()
-                    writer1.writerows(i[0])
+    with open(filename, 'a+', newline='', errors='ignore') as f:
+        writer1 = csv.DictWriter(f, fieldnames=[])
+        write = csv.writer(f)
+        for item in data:
+            if item and item[0]:
+                datas, temp_sql = item
+                write.writerow([temp_sql])
+                fieldnames = datas[0].keys()
+                writer1.fieldnames = fieldnames
+                writer1.writeheader()
+                writer1.writerows(datas)
 
 
 def get_databases():

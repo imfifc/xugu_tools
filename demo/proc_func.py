@@ -5,6 +5,7 @@ cur = conn.cursor()
 cur.execute('drop table test')
 cur.execute('create table test(arg1 int, arg2 varchar);')
 
+# 存储过程和存储函数 有结果集 才需要setinputtype,setinputsizes, 个数要一致
 # ---------------------存储过程提取结果集--------------------
 cur.execute('''
 CREATE or replace procedure pro_test(col1 int,col2 OUT SYS_REFCURSOR) as \

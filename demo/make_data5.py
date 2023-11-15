@@ -4,6 +4,7 @@ import multiprocessing
 import queue
 import sys
 import time
+import uuid
 from datetime import datetime, timedelta
 from multiprocessing import freeze_support
 from faker import Faker
@@ -131,7 +132,7 @@ def drop_tb(table):
 def create_product_tb():
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f"""
-    create table sysdba.product4(
+    create table product5(
     product_no varchar(50) not null,
     product_name varchar(200),
     product_introduce varchar(4000),
@@ -141,67 +142,6 @@ def create_product_tb():
     product_type varchar(50)
     )PARTITION BY RANGE(sell_date)INTERVAL 1 DAY PARTITIONS(('1970-01-01 00:00:00')) ;
     """
-    cur.execute(sql)
-
-
-def create_proc(chinese_text):
-    """
-     num: 往临时表单次的插入数据
-    :return:
-    """
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-
-    sql = """
-    create or replace procedure pr_test_insert(insert_num in int,insert_date IN date,chinese_text in varchar ) is 
-    declare
-    TYPE t_var IS varray(30) OF VARCHAR;
-    city_var t_var;                            
-    add_num int;
-    case_num int;
-    begin 
-    add_num:=0; 
-    case_num:=0; 
-    city_var.EXTEND(30);                         
-    city_var(1):='北京';                          
-    city_var(2):='上海';                        
-    city_var(3):='成都';                           
-    city_var(4):='青岛';                         
-    city_var(5):='广州'; 
-    city_var(6):='香港';
-    city_var(7):='西安';  
-    city_var(8):='拉萨';
-    city_var(9):='杭州'; 
-    city_var(10):='深圳';
-    
-    city_var(11):='汽车';
-    city_var(12):='手机';
-    city_var(13):='日用品';
-    city_var(14):='电脑';
-    city_var(15):='海鲜';
-    city_var(16):='植物';
-    city_var(17):='家具';
-    city_var(18):='服装';
-    city_var(19):='书籍';
-    city_var(20):='饮料';
-    
-    for i in 1..insert_num loop 
-     add_num:=mod(rand(),9)+1;
-     case_num:=mod(rand(),9)+11;
-     insert into product4 values (sys_guid(),'零食大礼包'||random.string(1),
-                        chinese_text,
-                        sysdate,
-                        insert_date,
-                        city_var(add_num),
-                        city_var(case_num)
-     ) parallel 6 ;
-    
-     if mod(i,10000)=0 then
-        commit;
-     end if;
-     end loop;
-    end pr_test_insert ;
-    """
-    cur.execute("truncate table SYSDBA.product4 ")
     cur.execute(sql)
 
 
@@ -218,7 +158,7 @@ def rebuild_tables():
     重建表： 先删除后重建
     :return:
     """
-    tables = ['product4']
+    tables = ['product5']
     tables = [f'{db_user}.{i}' for i in tables]
     for table in tables:
         drop_tb(table)
@@ -233,28 +173,25 @@ def generate_dates(n):
     return date_strings
 
 
-def execute_proc_args(name):
+def insert_many(date, nums, db_host, db_port, db_user, db_pwd, db_name):
+    chinese_text = fake.text(max_nb_chars=100)
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    # print(cur.callproc("test_in", (20,), (1,)))
-    cur.callproc(name, (200000,), (1,))
-
-
-def execute_proc(name, rows, date, db_host, db_port, db_user, db_pwd, db_name):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    cur.callproc(name, (rows, date), (1, 1))
-    # if len(args):
-    #     print(name, tuple(args), tuple(1 for _ in range(len(args))))
-    #     cur.callproc(name, tuple(args), tuple(1 for _ in range(len(args))))
-    # else:
-    #     cur.callproc(name)
+    sql = "insert into product5 values(?,?,?,?,?,?,?)"
+    # print(uuid.uuid4(),type(uuid.uuid4()))
+    rows = []
+    for i in range(nums):
+        data = (str(uuid.uuid4()), f'零食大礼包{i}', chinese_text, date, date, fake.city(), fake.city())
+        rows.append(data)
+    print(len(rows), rows[:1])
+    cur.executemany(sql, tuple(rows))
 
 
 # 多进程调用
-def multi_process(proc_name, rows, dates, db_host, db_port, db_user, db_pwd, db_name):
+def multi_process(dates, rows, db_host, db_port, db_user, db_pwd, db_name):
     processes = []
     for date in dates:
-        process = multiprocessing.Process(target=execute_proc,
-                                          args=(proc_name, rows, date, db_host, db_port, db_user, db_pwd, db_name))
+        process = multiprocessing.Process(target=insert_many,
+                                          args=(date, rows, db_host, db_port, db_user, db_pwd, db_name))
         processes.append(process)
     for process in processes:
         process.start()
@@ -267,15 +204,12 @@ def once_proc():
     rows = int(input("请输入表行数: "))
     days = int(input("请输入天数: "))
 
-    # parallel_n = int(input("请输入并发数: "))
     dates = generate_dates(days)
     print(dates)
-    chinese_text = fake.text(max_nb_chars=100)
-    create_proc(chinese_text)
     start = time.time()
-    multi_process('pr_test_insert', rows, dates, db_host, db_port, db_user, db_pwd, db_name)
+    multi_process(dates, rows, db_host, db_port, db_user, db_pwd, db_name)
     end = time.time() - start
-    show('product4')
+    show('product5')
     print(f'耗时{end:.2f}秒', f'tps:{(rows * days / end):.2f} 行/s')
 
 

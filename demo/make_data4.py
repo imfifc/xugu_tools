@@ -6,11 +6,8 @@ import sys
 import time
 from datetime import datetime, timedelta
 from multiprocessing import freeze_support
-from faker import Faker
 
 import xgcondb
-
-fake = Faker(locale='zh_CN')
 
 
 def get_cur(db_host, db_port, db_user, db_pwd, db_name):
@@ -95,7 +92,7 @@ def create_random_package():
         begin
             return mod(rand(),max_value-min_value)+min_value;
         end;
-    
+
         FUNCTION string(length IN NUMBER) RETURN VARCHAR2 IS
            characters VARCHAR2(62) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
            random_string VARCHAR2(32767) := '';
@@ -105,7 +102,7 @@ def create_random_package():
            END LOOP;
            RETURN random_string;
         end;
-    
+
         FUNCTION chinese_string(length IN NUMBER) RETURN VARCHAR2 is
           random_string VARCHAR2 := '';
           characters VARCHAR2(58) := '啊阿埃挨哎唉哀皑癌蔼矮艾碍爱隘鞍氨安俺按暗岸胺案肮昂盎凹敖熬翱袄傲奥懊澳芭捌扒叭吧笆八疤巴拔跋靶把耙坝霸罢爸白柏百摆';
@@ -131,7 +128,7 @@ def drop_tb(table):
 def create_product_tb():
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f"""
-    create table sysdba.product4(
+    create table product4(
     product_no varchar(50) not null,
     product_name varchar(200),
     product_introduce varchar(4000),
@@ -144,15 +141,14 @@ def create_product_tb():
     cur.execute(sql)
 
 
-def create_proc(chinese_text):
+def create_proc():
     """
      num: 往临时表单次的插入数据
     :return:
     """
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-
-    sql = """
-    create or replace procedure pr_test_insert(insert_num in int,insert_date IN date,chinese_text in varchar ) is 
+    sql = f"""
+    create or replace procedure pr_test_insert(insert_num in int,insert_date IN date) is 
     declare
     TYPE t_var IS varray(30) OF VARCHAR;
     city_var t_var;                            
@@ -172,7 +168,7 @@ def create_proc(chinese_text):
     city_var(8):='拉萨';
     city_var(9):='杭州'; 
     city_var(10):='深圳';
-    
+
     city_var(11):='汽车';
     city_var(12):='手机';
     city_var(13):='日用品';
@@ -183,18 +179,18 @@ def create_proc(chinese_text):
     city_var(18):='服装';
     city_var(19):='书籍';
     city_var(20):='饮料';
-    
+
     for i in 1..insert_num loop 
      add_num:=mod(rand(),9)+1;
      case_num:=mod(rand(),9)+11;
      insert into product4 values (sys_guid(),'零食大礼包'||random.string(1),
-                        chinese_text,
+                        random.chinese_string(mod(rand(),99)+1),
                         sysdate,
                         insert_date,
                         city_var(add_num),
                         city_var(case_num)
      ) parallel 6 ;
-    
+
      if mod(i,10000)=0 then
         commit;
      end if;
@@ -270,8 +266,7 @@ def once_proc():
     # parallel_n = int(input("请输入并发数: "))
     dates = generate_dates(days)
     print(dates)
-    chinese_text = fake.text(max_nb_chars=100)
-    create_proc(chinese_text)
+    create_proc()
     start = time.time()
     multi_process('pr_test_insert', rows, dates, db_host, db_port, db_user, db_pwd, db_name)
     end = time.time() - start
@@ -281,12 +276,12 @@ def once_proc():
 
 if __name__ == '__main__':
     freeze_support()
-    db_host = '10.28.20.101'
-    db_port = 6325
-    db_user = 'SYSDBA'
-    db_pwd = 'SYSDBA'
-    db_name = 'SYSTEM'
-    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    # db_host = '10.28.20.101'
+    # db_port = 6325
+    # db_user = 'SYSDBA'
+    # db_pwd = 'SYSDBA'
+    # db_name = 'SYSTEM'
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     create_random_package()
     cur.execute('set max_loop_num to 0')

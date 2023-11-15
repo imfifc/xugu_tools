@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 import argparse
+import concurrent.futures
 import multiprocessing
+import queue
 import re
 import sys
 import time
@@ -14,7 +17,7 @@ def get_cur(db_host, db_port, db_user, db_pwd, db_name):
     return cur
 
 
-# 用于数据库中已存在的存储过程，进行造数
+# 参数解析前置，多进程才能不报错
 def parse_args():
     parser = argparse.ArgumentParser(
         # description='这是一个数据库环境采集工具',
@@ -67,100 +70,94 @@ def parse_args():
         parser.print_help()
         raise Exception('没有输入数据库 !!!\n')
     # if host and port and user and password and db:
-    #     print(f'host: {host} port: {port} user: {user} password: {password} db: {db} ')
+    #     print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
 
     return host, port, user, password, db
 
 
-def execute_proc_args(name):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    # print(cur.callproc("test_in", (20,), (1,)))
-    cur.callproc(name, (200000,), (1,))
-
-
-def parse_str(input_string):
-    # input_string = "123 45.67 abc 89.0 def 10 0"
-    # 使用正则表达式匹配整数、浮点数和字符串(用|)对多个正则表达式区分
-    pattern = re.compile(r".*?(\d+\.\d+|\d+|\w+)")
-    matches = re.findall(pattern, input_string)
-    # print(matches)
-    res = []
-    for match in matches:
-        if "." in match:
-            res.append(float(match))
-        elif match.isdigit() or (match[0] in "+-" and match[1:].isdigit()):
-            res.append(int(match))
-        else:
-            res.append(match)
-    return res
-
-
-def create_products_tb(hotspot):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = f"""
-    create table if not exists sysdba.products(
-    product_no varchar(50) not null,
-    product_name varchar(200),
-    product_introduce varchar(4000),
-    manufacture_date date,
-    sell_dates varchar(50),
-    address varchar(200),
-    product_type varchar(50)
-    )HOTSPOT {hotspot};
-    """
-    cur.execute(sql)
-
-
+# 存储过程中不能有注释
 def create_random_package():
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     pkg_header = """
-    CREATE OR REPLACE PACKAGE random IS
-      FUNCTION value(min_value bigint, max_value bigint) return bigint;
+    CREATE OR REPLACE PACKAGE random is
+      function value(min_value bigint ,max_value bigint) return bigint ;
       FUNCTION string(length IN NUMBER) RETURN varchar2;
+      FUNCTION chinese_string(length IN NUMBER) RETURN varchar2;
     END;
     """
     pkg_body = """
     CREATE OR REPLACE PACKAGE BODY random as
         function value(min_value bigint, max_value bigint) return bigint as
-            div  bigint := power(2, 31)-1;
             tmp_value  double;
             ret_value  bigint;
         begin
-            tmp_value := to_number(abs(rand())) / div * (max_value - min_value);
-            ret_value := round(tmp_value, 0) + min_value;
-            return ret_value;
+            return mod(rand(),max_value-min_value)+min_value;
         end;
-    
+
         FUNCTION string(length IN NUMBER) RETURN VARCHAR2 IS
            characters VARCHAR2(62) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
            random_string VARCHAR2(32767) := '';
         BEGIN
            FOR i IN 1..length LOOP
-              random_string := random_string || SUBSTR(characters, CEIL(random.value(1, 62)), 1);
+              random_string := random_string || SUBSTR(characters,mod(rand(),61)+1, 1);
            END LOOP;
            RETURN random_string;
         end;
-    
+
+        FUNCTION chinese_string(length IN NUMBER) RETURN VARCHAR2 is
+          random_string VARCHAR2 := '';
+          characters VARCHAR2(58) := '啊阿埃挨哎唉哀皑癌蔼矮艾碍爱隘鞍氨安俺按暗岸胺案肮昂盎凹敖熬翱袄傲奥懊澳芭捌扒叭吧笆八疤巴拔跋靶把耙坝霸罢爸白柏百摆';
+        BEGIN
+           FOR i IN 1..length LOOP
+              random_string := random_string || SUBSTR(characters, CEIL(value(1, 58)), 1);
+           END LOOP;
+           RETURN random_string;
+        end;
+
     end random;
     """
     cur.execute(pkg_header)
     cur.execute(pkg_body)
 
 
-def create_proc():
+def drop_tb(table):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = """
-    create or replace procedure p_test(insert_num in int) as
+    sql = f"drop table if exists {table} cascade"
+    cur.execute(sql)
+
+
+def create_product_tb():
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = f"""
+    create table sysdba.product3(
+    product_no varchar(50) not null,
+    product_name varchar(200),
+    product_introduce varchar(4000),
+    manufacture_date date,
+    sell_date datetime,
+    address varchar(200),
+    product_type varchar(50)
+    )PARTITION BY RANGE(sell_date)INTERVAL 1 DAY PARTITIONS(('1970-01-01 00:00:00')) ;
+    """
+    cur.execute(sql)
+
+
+def create_temp_proc(num):
+    """
+     num: 往临时表单次的插入数据
+    :return:
+    """
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = f"""
+    create or replace procedure pr_test_insert3(insert_num in int) is 
     declare
     TYPE t_var IS varray(30) OF VARCHAR;
     city_var t_var;                            
     add_num int;
     case_num int;
-    time_num int; 
-    begin
+    begin 
     add_num:=0; 
     case_num:=0; 
-    time_num :=0; 
     city_var.EXTEND(30);                         
     city_var(1):='北京';                          
     city_var(2):='上海';                        
@@ -184,17 +181,49 @@ def create_proc():
     city_var(19):='书籍';
     city_var(20):='饮料';
     
-    for i in 1..insert_num loop
-    add_num:=random.value(1,10)::int;
-    case_num:=random.value(11,20)::int;
-    time_num:=random.value(1,365*3)::int;
-    insert into products values(sys_guid(),RANDOM.STRING(8),'零食大礼包'||RANDOM.STRING(1),getdate(sysdate+time_num),getdate(sysdate+time_num+60),city_var(add_num),city_var(case_num));
+    for i in 1..insert_num loop 
+     add_num:=random.value(1,10)::int;
+     case_num:=random.value(11,20)::int;
+     insert into product_test3 values (sys_guid(),'零食大礼包'||random.string(1),
+                        random.chinese_string(random.value(1,100)),
+                        to_date('2017-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss')+i,
+                        sysdate,
+                        city_var(add_num),
+                        city_var(case_num)
+     );
      if mod(i,10000)=0 then
         commit;
      end if;
-    end loop;
-    end;
+     end loop;
+    end pr_test_insert3;
     """
+    cur.execute("truncate table SYSDBA.product_test3 ")
+    cur.execute(sql)
+    cur.callproc('pr_test_insert3', (num,), (1,))
+
+
+def create_product_proc(num):
+    """
+    :param num: 创建天数
+    :return:
+    """
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = f"""
+    create or replace procedure pr_insert is 
+    begin 
+        for i in 1..{num} loop 
+        insert into product3  
+            select sys_uuid, product_name,product_introduce,manufacture_date,sysdate+i,address,product_type from product_test3;
+        commit;
+        end loop ;
+    end pr_insert;
+    """
+    cur.execute(sql)
+
+
+def create_procduct_test():
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = 'create table product_test3 as select * from product3;'
     cur.execute(sql)
 
 
@@ -206,16 +235,30 @@ def show(table):
     print(f'{table} : {row}')
 
 
-def drop_tb(table):
+def rebuild_tables():
+    """
+    重建表： 先删除后重建
+    :return:
+    """
+    tables = ['product3', 'product_test3']
+    tables = [f'{db_user}.{i}' for i in tables]
+    for table in tables:
+        drop_tb(table)
+
+    create_product_tb()
+    create_procduct_test()
+
+
+def execute_proc_args(name):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = f"drop table if exists {table} cascade"
-    cur.execute(sql)
+    # print(cur.callproc("test_in", (20,), (1,)))
+    cur.callproc(name, (200000,), (1,))
 
 
 def execute_proc(name, db_host, db_port, db_user, db_pwd, db_name, *args):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     if len(args):
-        cur.callproc(name, tuple(args), tuple(1 for i in range(len(args))))
+        cur.callproc(name, tuple(args), tuple(1 for _ in range(len(args))))
     else:
         cur.callproc(name)
 
@@ -234,33 +277,44 @@ def multi_process(n, proc_name, db_host, db_port, db_user, db_pwd, db_name, *arg
         process.join()
 
 
+def once_proc():
+    tmp_n = int(input("请输入临时表行数: "))
+    proc_nums = int(input("请输入正式表天数: "))
+    parallel_n = int(input("请输入并发数: "))
+    create_temp_proc(tmp_n)
+    create_product_proc(proc_nums)
+    start = time.time()
+    multi_process(parallel_n, 'pr_insert', db_host, db_port, db_user, db_pwd, db_name)
+    end = time.time() - start
+    show('product3')
+    show('product_test3')
+    print(f'耗时{end:.2f}秒', f'tps:{(tmp_n * parallel_n * proc_nums / end):.2f} 行/s')
+
+
 if __name__ == '__main__':
-    freeze_support()
     print(xgcondb.version())
-    db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    freeze_support()
+    db_host = '10.28.20.101'
+    db_port = 6325
+    db_user = 'SYSDBA'
+    db_pwd = 'SYSDBA'
+    db_name = 'SYSTEM'
+    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
 
     create_random_package()
-    create_products_tb(20)
-    create_proc()
-
+    cur.execute('set max_loop_num to 0')
+    cur.execute('set max_trans_modify to 0')
+    # 目的： 从临时表中取出1w数据到正式表
+    rebuild_tables()
     while True:
-        start = time.time()
-        proc_name = input("请输入存储过程名(默认p_test):").strip() or 'p_test'
-        proc_nums = int(input("请输入存储过程的参数(默认10000):") or 10000)
-        parallel_n = int(input("请输入并发数:"))
-        # proc_nums = parse_str(proc_nums)
-        multi_process(parallel_n, proc_name, db_host, db_port, db_user, db_pwd, db_name, proc_nums)
-        end = time.time() - start
-        show('products')
-        print(f'耗时{end:.2f}秒', f'tps:{(parallel_n * proc_nums / end):.2f} 行/s')
+        once_proc()
         flag = input("是否需要清除表重建，(默认不重建) 请输入Y/N: ")
         if flag == 'Y' or flag == 'y':
-            drop_tb('products')
-            create_products_tb(20)
-            create_proc()
+            rebuild_tables()
             print('已重建表')
-        q = input('\nPress q to exit… or continue')
+        q = input('\nPress q to exit…or continue')
         if q == 'q' or q == 'Q':
             break
 
-# 没使用连接池
+# todo  每天500w, 加一个中文字段1-100随机字符，一个月数据

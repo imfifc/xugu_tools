@@ -202,6 +202,9 @@ def create_proc():
      );
     
       ss :='';
+     if mod(i,10000)=0 then
+        commit;
+     end if;
      end loop;
     commit;
     end pr_test_insert4;

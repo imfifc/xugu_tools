@@ -23,7 +23,7 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--disable-gpu')
 chrome_options.add_argument("--no-sandbox ")
 chrome_options.add_argument("--ignore-certificate-errors")
-# chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless")
 # disable the banner "Chrome is being controlled by automated test software"
 chrome_options.add_experimental_option("useAutomationExtension", False)
 chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
@@ -45,7 +45,7 @@ def get_screenshot(driver, element):
     # print(element.location, element.size)
     # data = driver.get_window_rect()
     # print('窗口', data)
-    k = 1.75
+    k = 1
     left = int(element.location['x']) * k
     top = int(element.location['y']) * k
     right = int(element.location['x'] + element.size['width']) * k
@@ -62,7 +62,7 @@ def get_validate_code():
         print('code.png 不存在')
         pass
     with open('code.png', 'rb') as f:
-        ocr = ddddocr.DdddOcr()
+        ocr = ddddocr.DdddOcr(show_ad=False)
         code = ocr.classification(f.read())
     return code
 
@@ -120,9 +120,9 @@ def evening_daka(driver):
             after_daka.click()
     except Exception as e:
         print('evening daka 异常')
-    sign_ele.click()
+    # sign_ele.click()
     # ele = driver.find_element_by_css_selector('.info-last .resign')
-    # driver.find_element_by_css_selector('.info-last .content div:nth-child(2)').click()
+    driver.find_element_by_css_selector('.info-last .content div:nth-child(2)').click()
     driver.find_element_by_css_selector('.info-last .content div:nth-child(2) .resign').click()
     time.sleep(1)
     update_time = driver.find_element_by_css_selector('.info.info-last .signTime.text-elli')
@@ -134,10 +134,10 @@ def punch_clock(driver):
     today = datetime.strptime("2023-10-06", '%Y-%m-%d').date()
     today = date.today()
 
-    morning_start = 8 * 60 + 10
-    morning_end = 8 * 60 + 60
-    evening_start = 16 * 60
-    evening_end = 16 * 60 + 60
+    morning_start = 8 * 60
+    morning_end = 8 * 60 + 58
+    evening_start = 18 * 60
+    evening_end = 18 * 60 + 60
     while is_workday(today):
         current_time = time.localtime(time.time())
         current_minutes = current_time.tm_hour * 60 + current_time.tm_min
@@ -172,3 +172,15 @@ if __name__ == '__main__':
             quit(driver)
             print(time.time() - start)
             break
+
+"""
+ddddocr==1.4.8
+Pillow==9.5.0
+selenium==3.9.0
+"""
+
+"""
+docker run --rm  -it  -w /test --name chrome   -v /data:/test chrome3.8 python selnium2.py
+
+https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/119.0.6045.105/linux64/chromedriver-linux64.zip
+"""

@@ -92,6 +92,7 @@ def login(username, password):
         print('验证码错误，重试')
         quit(driver)
         return None
+    print(f'{datetime.now()} login success')
     return driver
 
 
@@ -105,8 +106,10 @@ def morning_daka(driver):
     except Exception as e:
         print('morning daka 异常 ')
     time.sleep(1)
-    update_time = driver.find_element_by_css_selector('.timeLine .info:nth-child(3) .signData .signTime ')
-    print(f'早上打卡时间: {update_time.text}')
+    driver.save_screenshot('moroning.jpg')
+    update_times = driver.find_elements_by_css_selector('.timeLine .signData .signTime ')
+    for update_time in update_times:
+        print(f'早上打卡时间: {update_time.text}')
     # return driver
 
 
@@ -122,6 +125,7 @@ def evening_daka(driver):
         print('evening daka 异常')
     # sign_ele.click()
     # ele = driver.find_element_by_css_selector('.info-last .resign')
+    driver.save_screenshot('evening.jpg')
     driver.find_element_by_css_selector('.info-last .content div:nth-child(2)').click()
     driver.find_element_by_css_selector('.info-last .content div:nth-child(2) .resign').click()
     time.sleep(1)
@@ -130,7 +134,7 @@ def evening_daka(driver):
     # return driver
 
 
-def punch_clock(driver):
+def punch_clock():
     today = datetime.strptime("2023-10-06", '%Y-%m-%d').date()
     today = date.today()
 
@@ -146,12 +150,22 @@ def punch_clock(driver):
             punch_time = current_minutes + random_minutes
             punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
-            morning_daka(driver)
+            driver = login(user, password)
+            if driver:
+                morning_daka(driver)
+            if not driver:
+                continue
+
         elif evening_start <= current_minutes <= evening_end:
             punch_time = current_minutes + random_minutes
             punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
-            evening_daka(driver)
+            driver = login(user, password)
+            if driver:
+                evening_daka(driver)
+            if not driver:
+                continue
+
         break
         # time.sleep(60)
 
@@ -164,14 +178,9 @@ def quit(driver):
 if __name__ == '__main__':
     while True:
         start = time.time()
-        driver = login(user, password)
-        if driver:
-            punch_clock(driver)
-            # morning_daka(driver)
-            # evening_daka(driver)
-            quit(driver)
-            print(time.time() - start)
-            break
+        punch_clock()
+        print(time.time() - start)
+        break
 
 """
 ddddocr==1.4.8

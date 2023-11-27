@@ -4,7 +4,7 @@ import time
 import random
 import ddddocr
 from pathlib import Path
-
+import schedule
 from PIL import Image
 from io import BytesIO
 from selenium import webdriver
@@ -140,29 +140,35 @@ def punch_clock():
 
     morning_start = 8 * 60
     morning_end = 8 * 60 + 58
-    evening_start = 18 * 60
+    evening_start = 15 * 60
     evening_end = 18 * 60 + 60
     while is_workday(today):
         current_time = time.localtime(time.time())
         current_minutes = current_time.tm_hour * 60 + current_time.tm_min
-        random_minutes = random.randint(0, 20)  # 在20分钟内随机选择打卡时间
+        # punch_time = current_minutes + random_minutes
         if morning_start <= current_minutes <= morning_end:
-            punch_time = current_minutes + random_minutes
-            punch_hour, punch_minute = divmod(punch_time, 60)
+            random_minutes = random.randint(0, 2)
+            print(f'随机时间{random_minutes* 30}秒')
+            time.sleep(random_minutes * 30)
+            # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
             if driver:
                 morning_daka(driver)
+                break
             if not driver:
                 continue
 
         elif evening_start <= current_minutes <= evening_end:
-            punch_time = current_minutes + random_minutes
-            punch_hour, punch_minute = divmod(punch_time, 60)
+            random_minutes = random.randint(0, 2)
+            print(f'随机时间{random_minutes* 30}秒')
+            time.sleep(random_minutes * 30)
+            # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
             if driver:
                 evening_daka(driver)
+                break
             if not driver:
                 continue
 
@@ -176,11 +182,25 @@ def quit(driver):
 
 
 if __name__ == '__main__':
+    def my_job():
+        while True:
+            start = time.time()
+            punch_clock()
+            print(time.time() - start)
+            break
+
+    schedule.every().day.at("08:00").do(my_job)
+    schedule.every().day.at("08:20").do(my_job)
+    # schedule.every().day.at("15:10").do(my_job)
+    schedule.every().day.at("18:00").do(my_job)
+    schedule.every().day.at("18:20").do(my_job)
+    schedule.every().day.at("18:40").do(my_job)
+
     while True:
-        start = time.time()
-        punch_clock()
-        print(time.time() - start)
-        break
+        # 检查是否有要运行的任务
+        schedule.run_pending()
+        # 休眠1秒，避免过多占用系统资源
+        time.sleep(1)
 
 """
 ddddocr==1.4.8
@@ -190,6 +210,25 @@ selenium==3.9.0
 
 """
 docker run --rm  -it  -w /test --name chrome   -v /data:/test chrome3.8 python selnium2.py
-
+# 下载chromedriver 119版本
 https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/119.0.6045.105/linux64/chromedriver-linux64.zip
+"""
+
+
+
+"""
+# 总数重启
+docker run   -itd  -w /test --restart always  --name chrome    chrome3.81 
+ # 无缓存  
+docker build --no-cache  -t chrome3.81 . 
+docker stop chrome && docker rm chrome
+
+
+# Dockerfile
+FROM chrome3.8
+WORKDIR /test
+RUN pip install  schedule -i https://pypi.tuna.tsinghua.edu.cn/simple
+COPY . .
+
+CMD ["python","selnium2.py"]
 """

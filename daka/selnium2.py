@@ -23,7 +23,7 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--disable-gpu')
 chrome_options.add_argument("--no-sandbox ")
 chrome_options.add_argument("--ignore-certificate-errors")
-chrome_options.add_argument("--headless")
+# chrome_options.add_argument("--headless")
 # disable the banner "Chrome is being controlled by automated test software"
 chrome_options.add_experimental_option("useAutomationExtension", False)
 chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
@@ -36,7 +36,7 @@ else:
 
 user = 'zhujm'
 # password = 'Wyc.2428714195'
-password = '4175a0b7b165c54973d246d8adf37928_random_'
+password = '84EqgwegxJ#@'
 
 
 def get_screenshot(driver, element):
@@ -45,7 +45,7 @@ def get_screenshot(driver, element):
     # print(element.location, element.size)
     # data = driver.get_window_rect()
     # print('窗口', data)
-    k = 1
+    k = 1.75
     left = int(element.location['x']) * k
     top = int(element.location['y']) * k
     right = int(element.location['x'] + element.size['width']) * k
@@ -155,6 +155,7 @@ def punch_clock():
             driver = login(user, password)
             if driver:
                 morning_daka(driver)
+                quit(driver)
                 break
             if not driver:
                 continue
@@ -168,6 +169,7 @@ def punch_clock():
             driver = login(user, password)
             if driver:
                 evening_daka(driver)
+                quit(driver)
                 break
             if not driver:
                 continue
@@ -188,19 +190,19 @@ if __name__ == '__main__':
             punch_clock()
             print(time.time() - start)
             break
-
-    schedule.every().day.at("08:00").do(my_job)
-    schedule.every().day.at("08:20").do(my_job)
-    # schedule.every().day.at("15:10").do(my_job)
-    schedule.every().day.at("18:00").do(my_job)
-    schedule.every().day.at("18:20").do(my_job)
-    schedule.every().day.at("18:40").do(my_job)
-
-    while True:
-        # 检查是否有要运行的任务
-        schedule.run_pending()
-        # 休眠1秒，避免过多占用系统资源
-        time.sleep(1)
+    my_job()
+    # schedule.every().day.at("08:00").do(my_job)
+    # schedule.every().day.at("08:20").do(my_job)
+    # # schedule.every().day.at("15:10").do(my_job)
+    # schedule.every().day.at("18:00").do(my_job)
+    # schedule.every().day.at("18:20").do(my_job)
+    # schedule.every().day.at("18:40").do(my_job)
+    #
+    # while True:
+    #     # 检查是否有要运行的任务
+    #     schedule.run_pending()
+    #     # 休眠1秒，避免过多占用系统资源
+    #     time.sleep(1)
 
 """
 ddddocr==1.4.8

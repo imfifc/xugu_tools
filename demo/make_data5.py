@@ -22,7 +22,7 @@ def get_cur(db_host, db_port, db_user, db_pwd, db_name):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        # description='这是一个数据库环境采集工具',
+        description='基于faker的造数工具，纯单个insert批量插入，插入速度最快。建议放在数据库所在的服务器，避免网络占满',
         prefix_chars='-'
     )
     # 添加位置参数
@@ -217,7 +217,8 @@ def once_proc():
 
 
 if __name__ == '__main__':
-    freeze_support()  # linux 不需要
+    if sys.platform == 'win32':
+        freeze_support()  # linux 不需要
     # db_host = '10.28.20.101'
     # db_port = 6326
     # db_user = 'SYSDBA'

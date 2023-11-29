@@ -23,7 +23,7 @@ def analyze_packet(packet, filename, port):
                     time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     # print(payload)
                     color_ip = f'\033[94m{ip}\033[0m'
-                    output = f"{time}  {color_ip}  {data.decode('utf-8')}"
+                    output = f"{time}  {color_ip}  {data.decode('utf-8', errors='ignore')}"
                     print(output)
                     with open(filename, 'a+', newline='', encoding='utf-8') as f:
                         f.write(f'{output} \n')

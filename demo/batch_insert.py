@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 import xgcondb
 
-conn = xgcondb.connect(host="10.28.23.166", port="5138", database="SYSTEM", user="SYSDBA", password="SYSDBA")
+conn = xgcondb.connect(host="10.28.23.146", port="5138", database="SYSTEM", user="SYSDBA", password="SYSDBA")
 cur = conn.cursor()
 start = time.time()
 
@@ -27,7 +27,7 @@ def execute():
     cur.execute(sql, rows)
     show('test')
 
-execute()
+# execute()
 def execute2():
     # 设置非自动提交，默认自动提交
     # conn.autocommit(False)
@@ -79,11 +79,11 @@ def execute_many():
     cur.executemany("select * from dual;")
     cur.executemany(sql, (5, 'xugu', '2017-07-27', "dd", 4223.3432))
     show('test')
-
+# execute_many() 0.107s
 
 def executebatch():
     """目前超过10000条就失败"""
-    cur.execute("drop table update_tab;")
+    # cur.execute("drop table update_tab;")
     cur.execute("create  table update_tab(d1 int,d2 varchar);")
     t_list_1 = []
     t_list_2 = []
@@ -95,7 +95,7 @@ def executebatch():
     # print(len(t_list_1))
     cur.executebatch('insert into update_tab values(?,?);', (t_list_1, t_list_2))
     show('update_tab')
-
+executebatch()
 
 def main():
     # print(len(task_names))

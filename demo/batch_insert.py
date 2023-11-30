@@ -1,19 +1,19 @@
+from datetime import datetime, timedelta
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import xgcondb
 
-conn = xgcondb.connect(host="10.28.23.146", port="5138", database="SYSTEM", user="SYSDBA", password="SYSDBA")
+conn = xgcondb.connect(host="10.28.23.174", port="5138", database="SYSTEM", user="SYSDBA", password="SYSDBA")
 cur = conn.cursor()
 start = time.time()
 
 
 def show(table):
-    cur.execute(f"select * from {table} limit 100")
-    row = cur.fetchall()
-    for i in row:
-        print(i)
+    cur.execute(f"select count(*) from {table} ")
+    row = cur.fetchone()
+    print(f"{table}:{row}")
 
 
 def execute():
@@ -26,6 +26,7 @@ def execute():
     rows = (3, 'xugu', '2017-05-26', 'yyy', '3.3432')
     cur.execute(sql, rows)
     show('test')
+
 
 # execute()
 def execute2():
@@ -67,35 +68,46 @@ def execute2():
 
 
 def execute_many():
-    """ executemany()执 行insert时 是 用preparestatment"""
+    """ executemany()执 行insert时 是 用preparestatment 虽然是prepare 但是确是一次一次的提交的，大量insert 反而最慢"""
     # cur.execute("drop table if exists test")
-    cur.execute("drop table  test")
+    cur.execute("drop table if exists test")
     cur.execute("create table test(a int,b varchar,c date,d varchar,e numeric(8,4) );")
-    rows = ((4, 'xugu', '2017-05-26', 'hh', '3.3432'),
-            ('4', 'xugu', '2017-05-26', 'hh', '3.3432'))
+    rows = []
+    for i in range(1000):
+        row = (i, 'xugu', '2017-05-26', f'{i}', f'{i}')
+        rows.append(row)
+    rows = tuple(rows)
     sql = "insert into test values(?,?,?,?,?);"
     cur.executemany(sql, rows)
     print(cur.rowcount)
-    cur.executemany("select * from dual;")
-    cur.executemany(sql, (5, 'xugu', '2017-07-27', "dd", 4223.3432))
+    # cur.executemany("select * from dual;")
+    # cur.executemany(sql, (5, 'xugu', '2017-07-27', "dd", 4223.3432))
     show('test')
-# execute_many() 0.107s
+
+
+# execute_many()  # 1000: 23s
+
 
 def executebatch():
-    """目前超过10000条就失败"""
-    # cur.execute("drop table update_tab;")
+    """目前超过10000条就失败,
+    目前能跟jdbc 的prepare批量插入速度相比， python 最快的插入方式
+    """
+    cur.execute("drop table if exists update_tab;")
     cur.execute("create  table update_tab(d1 int,d2 varchar);")
     t_list_1 = []
     t_list_2 = []
     name = 'Python'
-    for i in range(10000):
+    for i in range(32500):
         # 单次批量执行改变的行数不得超过数据库设置的单个事务最大变更数,
         t_list_1.append(i)
         t_list_2.append(name + str(i))
     # print(len(t_list_1))
     cur.executebatch('insert into update_tab values(?,?);', (t_list_1, t_list_2))
     show('update_tab')
-executebatch()
+
+
+executebatch()  # 1w行: 1.3s
+
 
 def main():
     # print(len(task_names))

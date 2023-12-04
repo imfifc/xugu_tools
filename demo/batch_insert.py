@@ -73,7 +73,7 @@ def execute_many():
     cur.execute("drop table if exists test")
     cur.execute("create table test(a int,b varchar,c date,d varchar,e numeric(8,4) );")
     rows = []
-    for i in range(1000):
+    for i in range(10000):
         row = (i, 'xugu', '2017-05-26', f'{i}', f'{i}')
         rows.append(row)
     rows = tuple(rows)
@@ -89,24 +89,22 @@ def execute_many():
 
 
 def executebatch():
-    """目前超过10000条就失败,
-    目前能跟jdbc 的prepare批量插入速度相比， python 最快的插入方式
+    """目前超过325000条就失败,
     """
+    # 单次批量执行改变的行数不得超过数据库设置的单个事务最大变更数,
     cur.execute("drop table if exists update_tab;")
     cur.execute("create  table update_tab(d1 int,d2 varchar);")
-    t_list_1 = []
-    t_list_2 = []
-    name = 'Python'
-    for i in range(32500):
-        # 单次批量执行改变的行数不得超过数据库设置的单个事务最大变更数,
-        t_list_1.append(i)
-        t_list_2.append(name + str(i))
-    # print(len(t_list_1))
-    cur.executebatch('insert into update_tab values(?,?);', (t_list_1, t_list_2))
+    rows = []
+    for i in range(10000):
+        data = (i, f'python{i}')
+        rows.append(data)
+    data = zip(*rows)
+    p0, p1 = data
+    cur.executebatch('insert into update_tab values(?,?);', (p0, p1))
     show('update_tab')
 
 
-executebatch()  # 1w行: 1.3s
+executebatch()  # 1w行: 0.16s
 
 
 def main():

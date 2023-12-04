@@ -189,11 +189,27 @@ def insert_many(date, nums, db_host, db_port, db_user, db_pwd, db_name):
     cur.executemany(sql, tuple(rows))
 
 
+def insert_batch(date, nums, db_host, db_port, db_user, db_pwd, db_name):
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    sql = "insert into product5 values(?,?,?,?,?,?,?)"
+    fake = Faker(locale='zh_CN')
+    Faker.seed()  # 使用不同的种子
+    # print(uuid.uuid4(),type(uuid.uuid4()))
+    rows = []
+    for i in range(nums):
+        chinese_text = fake.text(max_nb_chars=100)
+        data = (str(uuid.uuid4()), f'零食大礼包{i}', chinese_text, date, date, fake.city(), fake.city())
+        rows.append(data)
+    # print(len(rows), rows[:1])
+    p0, p1, p2, p3, p4, p5, p6 = zip(*rows)
+    cur.executebatch(sql, (p0, p1, p2, p3, p4, p5, p6))
+
+
 # 多进程调用
 def multi_process(dates, nums, db_host, db_port, db_user, db_pwd, db_name):
     processes = []
     for date in dates:
-        process = multiprocessing.Process(target=insert_many,
+        process = multiprocessing.Process(target=insert_batch,
                                           args=(date, nums, db_host, db_port, db_user, db_pwd, db_name))
         processes.append(process)
     for process in processes:

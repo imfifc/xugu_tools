@@ -23,7 +23,7 @@ chrome_options.add_argument('--disable-dev-shm-usage')
 chrome_options.add_argument('--disable-gpu')
 chrome_options.add_argument("--no-sandbox ")
 chrome_options.add_argument("--ignore-certificate-errors")
-# chrome_options.add_argument("--headless")
+chrome_options.add_argument("--headless")
 # disable the banner "Chrome is being controlled by automated test software"
 chrome_options.add_experimental_option("useAutomationExtension", False)
 chrome_options.add_experimental_option("excludeSwitches", ['enable-automation'])
@@ -45,7 +45,7 @@ def get_screenshot(driver, element):
     # print(element.location, element.size)
     # data = driver.get_window_rect()
     # print('窗口', data)
-    k = 1.75
+    k = 1
     left = int(element.location['x']) * k
     top = int(element.location['y']) * k
     right = int(element.location['x'] + element.size['width']) * k
@@ -97,19 +97,24 @@ def login(username, password):
 
 
 def morning_daka(driver):
-    driver.find_element_by_css_selector('#signPlugin').click()
     try:
-        morning_daka = driver.find_element_by_css_selector('.signBtnPanel button[name="signBtn"]')
-        if morning_daka:
-            print(morning_daka.text)
-            morning_daka.click()
+        driver.find_element_by_css_selector('.ant-modal-content .ant-modal-footer button:nth-child(1)').click()
     except Exception as e:
-        print('morning daka 异常 ')
+        print('今天已打卡')  # 获取打卡时间
     time.sleep(1)
-    driver.save_screenshot('moroning.jpg')
+    driver.find_element_by_css_selector('#signPlugin').click()
     update_times = driver.find_elements_by_css_selector('.timeLine .signData .signTime ')
     for update_time in update_times:
         print(f'早上打卡时间: {update_time.text}')
+    # try:
+    #     morning_daka = driver.find_element_by_css_selector('.signBtnPanel button[name="signBtn"]')
+    #     if morning_daka:
+    #         print(morning_daka.text)
+    #         morning_daka.click()
+    # except Exception as e:
+    #     print('morning daka 异常 ')
+    # time.sleep(1)
+    # driver.save_screenshot('moroning.jpg')
     # return driver
 
 
@@ -123,9 +128,7 @@ def evening_daka(driver):
             after_daka.click()
     except Exception as e:
         print('evening daka 异常')
-    # sign_ele.click()
-    # ele = driver.find_element_by_css_selector('.info-last .resign')
-    driver.save_screenshot('evening.jpg')
+    # driver.save_screenshot('evening.jpg')
     driver.find_element_by_css_selector('.info-last .content div:nth-child(2)').click()
     driver.find_element_by_css_selector('.info-last .content div:nth-child(2) .resign').click()
     time.sleep(1)
@@ -148,7 +151,7 @@ def punch_clock():
         # punch_time = current_minutes + random_minutes
         if morning_start <= current_minutes <= morning_end:
             random_minutes = random.randint(0, 2)
-            print(f'随机时间{random_minutes* 30}秒')
+            print(f'随机时间{random_minutes * 30}秒')
             time.sleep(random_minutes * 30)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
@@ -162,7 +165,7 @@ def punch_clock():
 
         elif evening_start <= current_minutes <= evening_end:
             random_minutes = random.randint(0, 2)
-            print(f'随机时间{random_minutes* 30}秒')
+            print(f'随机时间{random_minutes * 30}秒')
             time.sleep(random_minutes * 30)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
@@ -190,19 +193,21 @@ if __name__ == '__main__':
             punch_clock()
             print(time.time() - start)
             break
-    my_job()
-    # schedule.every().day.at("08:00").do(my_job)
-    # schedule.every().day.at("08:20").do(my_job)
-    # # schedule.every().day.at("15:10").do(my_job)
-    # schedule.every().day.at("18:00").do(my_job)
-    # schedule.every().day.at("18:20").do(my_job)
-    # schedule.every().day.at("18:40").do(my_job)
-    #
-    # while True:
-    #     # 检查是否有要运行的任务
-    #     schedule.run_pending()
-    #     # 休眠1秒，避免过多占用系统资源
-    #     time.sleep(1)
+
+
+    # my_job()
+    schedule.every().day.at("08:10").do(my_job)
+    schedule.every().day.at("08:20").do(my_job)
+    # schedule.every().day.at("15:10").do(my_job)
+    schedule.every().day.at("18:00").do(my_job)
+    schedule.every().day.at("18:20").do(my_job)
+    schedule.every().day.at("18:30").do(my_job)
+
+    while True:
+        # 检查是否有要运行的任务
+        schedule.run_pending()
+        # 休眠1秒，避免过多占用系统资源
+        time.sleep(1)
 
 """
 ddddocr==1.4.8
@@ -215,8 +220,6 @@ docker run --rm  -it  -w /test --name chrome   -v /data:/test chrome3.8 python s
 # 下载chromedriver 119版本
 https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/119.0.6045.105/linux64/chromedriver-linux64.zip
 """
-
-
 
 """
 # 总数重启

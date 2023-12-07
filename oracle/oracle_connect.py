@@ -162,7 +162,7 @@ def get_table_statistic():
     write_csv(file_name1, db_tables)
 
 
-def get_table_space():
+def get_schema_space():
     """
     -- 4、统计所有用户下的表对象使用空间大小
 SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segments
@@ -175,7 +175,24 @@ SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segmen
     """
     data = pool.executor(sql)
     temp_sql = f'schema--table--sql: --dba_segments-- {sql}'
-    write_csv('4.所有用户的表空间大小.csv', [(data, temp_sql)])
+    write_csv('4.每个模式的大小.csv', [(data, temp_sql)])
+
+
+def get_table_space():
+    """
+    获取用户模式下的表大小
+    :return:
+    """
+    sql = """
+    SELECT OWNER as "模式", segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
+    FROM dba_segments
+    WHERE  SEGMENT_TYPE LIKE 'TABLE%'
+    AND OWNER NOT IN ('SYS', 'SYSTEM', 'OUTLN', 'DBSNMP', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'XDB', 'CTXSYS', 'ORDDATA', 'ORDPLUGINS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS', 'FLOWS_FILES', 'APEX_040200', 'APEX_PUBLIC_USER')
+    GROUP BY OWNER ,segment_name order by owner, round(sum(bytes)/1024/1024,2) desc
+    """
+    data = pool.executor(sql)
+    temp_sql = f'schema--table--sql: --dba_segments-- {sql}'
+    write_csv('9.每张表大小.csv', [(data, temp_sql)])
 
 
 def get_table_column():
@@ -399,6 +416,7 @@ if __name__ == "__main__":
     get_objects_count()
     get_table_statistic()
     get_table_space()
+    get_schema_space()
     get_table_column()
     get_table_column_type()
     get_constraint()

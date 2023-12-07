@@ -1,4 +1,5 @@
 import argparse
+import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import cx_Oracle
@@ -170,7 +171,7 @@ SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segmen
     :return:
     """
     sql = """
-    SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segments
+    SELECT OWNER as "用户/模式", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM dba_segments
        WHERE SEGMENT_TYPE LIKE 'TABLE%' GROUP BY OWNER ORDER BY round(sum(bytes)/1024/1024,2) desc
     """
     data = pool.executor(sql)
@@ -186,7 +187,7 @@ def get_table_space():
     sql = """
     SELECT OWNER as "模式", segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
     FROM dba_segments
-    WHERE  SEGMENT_TYPE LIKE 'TABLE%'
+    WHERE SEGMENT_NAME NOT LIKE 'BIN$%' and  SEGMENT_TYPE LIKE 'TABLE%' 
     AND OWNER NOT IN ('SYS', 'SYSTEM', 'OUTLN', 'DBSNMP', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'XDB', 'CTXSYS', 'ORDDATA', 'ORDPLUGINS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS', 'FLOWS_FILES', 'APEX_040200', 'APEX_PUBLIC_USER')
     GROUP BY OWNER ,segment_name order by owner, round(sum(bytes)/1024/1024,2) desc
     """
@@ -332,15 +333,15 @@ def main(task_names):
                 print(f"Function task encountered an error: {e}")
 
 
-if __name__ == "__main__":
+def parse_args():
     program = rf"""
-                          _      
-      ___  _ __ __ _  ___| | ___ 
-     / _ \| '__/ _` |/ __| |/ _ \
-    | (_) | | | (_| | (__| |  __/
-     \___/|_|  \__,_|\___|_|\___|    power by xugu  v1.0.0 
-                                     
-    """
+                             _      
+         ___  _ __ __ _  ___| | ___ 
+        / _ \| '__/ _` |/ __| |/ _ \
+       | (_) | | | (_| | (__| |  __/
+        \___/|_|  \__,_|\___|_|\___|    power by xugu  v1.0.0 
+
+       """
     print(program)
     parser = argparse.ArgumentParser(
         # description='这是一个数据库环境采集工具',
@@ -362,6 +363,13 @@ if __name__ == "__main__":
     service_name = args.service_name
     dsn = f'{host}:{port}/{service_name}'
 
+    if len(sys.argv) == 1:
+        host = input("请输入ip: ")
+        port = input("请输入端口: ")
+        user = input("请输入用户: ")
+        password = input("请输入密码: ")
+        service_name = input("请输入服务名: ")
+        dsn = f'{host}:{port}/{service_name}'
     if not host:
         parser.print_help()
         raise Exception('没有输入ip !!!\n')
@@ -379,6 +387,10 @@ if __name__ == "__main__":
         raise Exception('请输入服务名!!!\n')
     if host and port and user and password and service_name:
         print(f'dsn: {dsn} user: {user} password: {password}')
+    return host, port, user, password, dsn
+
+
+if __name__ == "__main__":
     # pre_user = 'sys'
     # pre_password = 'rootroot'
     # user = "u1"
@@ -386,30 +398,12 @@ if __name__ == "__main__":
     # dsn = '192.168.2.217:1521/ORCL'
 
     # sql2 = 'select * from "SCOTT"."SALGRADE"'
-
+    host, port, user, password, dsn = parse_args()
     pool = OracleConnectionPool(user, password, dsn)
     timestands = time.strftime('%Y年%m月%d日%H%M%S', time.localtime())
-    dir = f'result_{timestands}'
+    dir = f'oracle_result_{timestands}'
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)
-    # try:
-    #     data = pool.executor(sql2)
-    #     print(data)
-    # except Exception as e:
-    #     print("Error:", e)
-    # finally:
-    #     pool.close_pool()
-
-    # use_privilege_conn(sql2)
-    # get_charset()
-    # get_objects_count()
-    # get_table_statistic()
-    # get_table_space()
-    # get_table_column()
-    # get_table_column_type()
-    # get_constraint()
-    # sumary()
-    # task_names = [get_table_space, get_db_and_charset, ]
     start = time.time()
     # main(task_names)
     get_charset()
@@ -422,3 +416,6 @@ if __name__ == "__main__":
     get_constraint()
     sumary()
     print(f'耗时: {time.time() - start:.2f} 秒')
+    q = input('\nPress q to exit…')
+    if q == 'q' or q == 'Q':
+        pass

@@ -400,7 +400,7 @@ if __name__ == "__main__":
     # sql2 = 'select * from "SCOTT"."SALGRADE"'
     host, port, user, password, dsn = parse_args()
     pool = OracleConnectionPool(user, password, dsn)
-    timestands = time.strftime('%Y年%m月%d日%H%M%S', time.localtime())
+    timestands = time.strftime('%Y-%m-%d-%H%M%S', time.localtime())
     dir = f'oracle_result_{timestands}'
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)

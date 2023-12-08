@@ -10,7 +10,7 @@ python oracle_connect.py -H localhost -u jack -p123456 -s XEPDB1
 pyinstaller -c -F --hidden-import=cx_Oracle oracle_connect.py
 
 
-oracle_connect.exe -H 192.168.17.129 -u test -p test -s oa
+oracle_connect.exe -H 10.28.23.225 -P1521 -u test -p test -s orcl
 
 #error   pyinstaller -c -F --add-data "D:\llearn\xugu\oracle\dll;dependency"  --hidden-import=cx_Oracle oracle_connect.py
 """
@@ -27,7 +27,8 @@ oracle_connect.exe -H 192.168.17.129 -u test -p test -s oa
 
 """windows_oracle 打包
 下载ddl 实例客户端库 https://www.oracle.com/database/technologies/instant-client/winx64-64-downloads.html
-添加oci.dll 动态二进制库
+添加oci.dll 动态二进制库，instantclient_19版本不支持win7,需要下载低版本
+win7: 如果报错：找不到MSVCR120.dll，则需要下载vcredist_x64.exe。 Visual C++ Redistributable Packages， 下载地址 https://www.microsoft.com/zh-cn/download/details.aspx?id=40784
 win 分号;
 pyinstaller -c -F --clean --hidden-import=cx_Oracle --clean --add-binary "D:\llearn\xugu\oracle\dll;." oracle_connect.py
 

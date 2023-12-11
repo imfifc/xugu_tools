@@ -1,14 +1,16 @@
-# 生成数据 表导入， 得出迁移速度  评估工时，容量
+# -*- coding: utf-8 -*-
 import argparse
-import concurrent.futures
 import multiprocessing
-import queue
-import re
 import sys
 import time
+import uuid
+from datetime import datetime, timedelta
 from multiprocessing import freeze_support
-
+from faker import Faker
 import xgcondb
+
+
+# from random import seed
 
 
 def get_cur(db_host, db_port, db_user, db_pwd, db_name):
@@ -17,10 +19,9 @@ def get_cur(db_host, db_port, db_user, db_pwd, db_name):
     return cur
 
 
-# 参数解析前置，多进程才能不报错
 def parse_args():
     parser = argparse.ArgumentParser(
-        # description='这是一个数据库环境采集工具',
+        description='基于faker的造数工具，纯单个insert批量插入，插入速度最快。建议放在数据库所在的服务器，避免网络占满',
         prefix_chars='-'
     )
     # 添加位置参数
@@ -75,61 +76,16 @@ def parse_args():
     return host, port, user, password, db
 
 
-# 存储过程中不能有注释
-def create_random_package():
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    pkg_header = """
-    CREATE OR REPLACE PACKAGE random is
-      function value(min_value bigint ,max_value bigint) return bigint ;
-      FUNCTION string(length IN NUMBER) RETURN varchar2;
-      FUNCTION chinese_string(length IN NUMBER) RETURN varchar2;
-    END;
-    """
-    pkg_body = """
-    CREATE OR REPLACE PACKAGE BODY random as
-        function value(min_value bigint, max_value bigint) return bigint as
-            tmp_value  double;
-            ret_value  bigint;
-        begin
-            return mod(rand(),max_value-min_value)+min_value;
-        end;
-
-        FUNCTION string(length IN NUMBER) RETURN VARCHAR2 IS
-           characters VARCHAR2(62) := 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-           random_string VARCHAR2(32767) := '';
-        BEGIN
-           FOR i IN 1..length LOOP
-              random_string := random_string || SUBSTR(characters,mod(rand(),61)+1, 1);
-           END LOOP;
-           RETURN random_string;
-        end;
-
-        FUNCTION chinese_string(length IN NUMBER) RETURN VARCHAR2 is
-          random_string VARCHAR2 := '';
-          characters VARCHAR2(58) := '啊阿埃挨哎唉哀皑癌蔼矮艾碍爱隘鞍氨安俺按暗岸胺案肮昂盎凹敖熬翱袄傲奥懊澳芭捌扒叭吧笆八疤巴拔跋靶把耙坝霸罢爸白柏百摆';
-        BEGIN
-           FOR i IN 1..length LOOP
-              random_string := random_string || SUBSTR(characters, CEIL(value(1, 58)), 1);
-           END LOOP;
-           RETURN random_string;
-        end;
-
-    end random;
-    """
-    cur.execute(pkg_header)
-    cur.execute(pkg_body)
-
-
 def drop_tb(table):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f"drop table if exists {table} cascade"
     cur.execute(sql)
 
 
-def create_product_tb():
+def create_product_tb(table):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f"""
-    create table sysdba.product3(
+    create table {table}(
     product_no varchar(50) not null,
     product_name varchar(200),
     product_introduce varchar(4000),
@@ -142,133 +98,54 @@ def create_product_tb():
     cur.execute(sql)
 
 
-def create_temp_proc(num):
-    """
-     num: 往临时表单次的插入数据
-    :return:
-    """
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = f"""
-    create or replace procedure pr_test_insert3(insert_num in int) is 
-    declare
-    TYPE t_var IS varray(30) OF VARCHAR;
-    city_var t_var;                            
-    add_num int;
-    case_num int;
-    begin 
-    add_num:=0; 
-    case_num:=0; 
-    city_var.EXTEND(30);                         
-    city_var(1):='北京';                          
-    city_var(2):='上海';                        
-    city_var(3):='成都';                           
-    city_var(4):='青岛';                         
-    city_var(5):='广州'; 
-    city_var(6):='香港';
-    city_var(7):='西安';  
-    city_var(8):='拉萨';
-    city_var(9):='杭州'; 
-    city_var(10):='深圳';
-
-    city_var(11):='汽车';
-    city_var(12):='手机';
-    city_var(13):='日用品';
-    city_var(14):='电脑';
-    city_var(15):='海鲜';
-    city_var(16):='植物';
-    city_var(17):='家具';
-    city_var(18):='服装';
-    city_var(19):='书籍';
-    city_var(20):='饮料';
-
-    for i in 1..insert_num loop 
-     add_num:=random.value(1,10)::int;
-     case_num:=random.value(11,20)::int;
-     insert into product_test3 values (sys_guid(),'零食大礼包'||random.string(1),
-                        random.chinese_string(random.value(1,100)),
-                        to_date('2017-01-01 00:00:00','yyyy-mm-dd hh24:mi:ss')+i,
-                        sysdate,
-                        city_var(add_num),
-                        city_var(case_num)
-     );
-     if mod(i,10000)=0 then
-        commit;
-     end if;
-     end loop;
-    end pr_test_insert3;
-    """
-    cur.execute("truncate table SYSDBA.product_test3 ")
-    cur.execute(sql)
-    cur.callproc('pr_test_insert3', (num,), (1,))
-
-
-def create_product_proc(num):
-    """
-    :param num: 创建天数
-    :return:
-    """
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = f"""
-    create or replace procedure pr_insert is 
-    begin 
-        for i in 1..{num} loop 
-        insert into product3  
-            select sys_uuid, product_name,product_introduce,manufacture_date,sysdate+i,address,product_type from product_test3;
-        commit;
-        end loop ;
-    end pr_insert;
-    """
-    cur.execute(sql)
-
-
-def create_procduct_test():
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    sql = 'create table product_test3 as select * from product3;'
-    cur.execute(sql)
-
-
 def show(table):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f'select count(*) from {table}'
+    analyze_sql = f"EXEC dbms_stat.analyze_table('{db_user}.{table}','all columns',1, null)"
     data = cur.execute(sql)
     row = cur.fetchone()
     print(f'{table} : {row}')
+    cur.execute(analyze_sql)
 
 
-def rebuild_tables():
+def rebuild_tables(table):
     """
     重建表： 先删除后重建
     :return:
     """
-    tables = ['product3', 'product_test3']
-    tables = [f'{db_user}.{i}' for i in tables]
-    for table in tables:
-        drop_tb(table)
-
-    create_product_tb()
-    create_procduct_test()
+    drop_tb(table)
+    create_product_tb(table)
 
 
-def execute_proc_args(name):
+def generate_dates(n):
+    current_date = datetime.now()
+    date_list = [current_date + timedelta(days=i) for i in range(n)]
+    date_strings = [date.strftime("%Y-%m-%d") for date in date_list]
+    return date_strings
+
+
+def insert_batch(table, date, nums, db_host, db_port, db_user, db_pwd, db_name):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    # print(cur.callproc("test_in", (20,), (1,)))
-    cur.callproc(name, (200000,), (1,))
-
-
-def execute_proc(name, db_host, db_port, db_user, db_pwd, db_name, *args):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    if len(args):
-        cur.callproc(name, tuple(args), tuple(1 for _ in range(len(args))))
-    else:
-        cur.callproc(name)
+    sql = f"insert into {table} values(?,?,?,?,?,?,?)"
+    fake = Faker(locale='zh_CN')
+    Faker.seed()  # 使用不同的种子
+    # print(uuid.uuid4(),type(uuid.uuid4()))
+    rows = []
+    for i in range(nums):
+        chinese_text = fake.text(max_nb_chars=100)
+        data = (str(uuid.uuid4()), f'零食大礼包{i}', chinese_text, date, date, fake.city(), fake.city())
+        rows.append(data)
+    # print(len(rows), rows[:1])
+    p0, p1, p2, p3, p4, p5, p6 = zip(*rows)
+    cur.executebatch(sql, (p0, p1, p2, p3, p4, p5, p6))
 
 
 # 多进程调用
-def multi_process(n, proc_name, db_host, db_port, db_user, db_pwd, db_name, *args):
+def multi_process(table, dates, nums, db_host, db_port, db_user, db_pwd, db_name):
     processes = []
-    for i in range(n):
-        process = multiprocessing.Process(target=execute_proc,
-                                          args=(proc_name, db_host, db_port, db_user, db_pwd, db_name, *args))
+    for date in dates:
+        process = multiprocessing.Process(target=insert_batch,
+                                          args=(table, date, nums, db_host, db_port, db_user, db_pwd, db_name))
         processes.append(process)
     for process in processes:
         process.start()
@@ -277,48 +154,76 @@ def multi_process(n, proc_name, db_host, db_port, db_user, db_pwd, db_name, *arg
         process.join()
 
 
-def once_proc(tmp_n, proc_nums, parallel_n):
-    create_temp_proc(tmp_n)
-    create_product_proc(proc_nums)
+def once_proc(table):
+    nums = 25000
+    days = 40
+    dates = generate_dates(days)
+    # print(dates)
     start = time.time()
-    multi_process(parallel_n, 'pr_insert', db_host, db_port, db_user, db_pwd, db_name)
+    multi_process(table, dates, nums, db_host, db_port, db_user, db_pwd, db_name)
     end = time.time() - start
-    show('product3')
-    show('product_test3')
-    print(f'耗时{end:.2f}秒', f'tps:{(tmp_n * parallel_n * proc_nums / end):.2f} 行/s')
+    show(table)
+    print(f'耗时{end:.2f}秒', f'tps:{(nums * days / end):.2f} 行/s')
+    return end
+
+
+def get_table_size(table):
+    sql = f"""
+    select d.db_name,s.schema_name,t.table_name,count(*)*8 as cnt from sys_schemas s,sys_tables t,sys_gstores g,sys_databases d 
+    where g.obj_id=t.table_id and s.schema_id=t.schema_id and s.db_id=t.db_id and g.db_id=d.db_id  and t.db_id=d.db_id and t.table_name='{table}'
+    group by t.table_name,s.schema_name,d.db_name 
+    """
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    data = cur.execute(sql)
+    row = cur.fetchone()
+    if row:
+        return row[3]
+    return None
+
+
+def get_speed():
+    if sys.platform == 'win32':
+        freeze_support()  # linux 不需要
+    # db_host = '10.28.23.174'
+    # db_port = 5138
+    # db_user = 'SYSDBA'
+    # db_pwd = 'SYSDBA'
+    # db_name = 'SYSTEM'
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    cur.execute('set max_loop_num to 0')
+    cur.execute('set max_trans_modify to 0')
+    table = 'procuct_555'
+    rebuild_tables(table)
+    time = once_proc(table)
+    ## drop_tb('product555')
+    size = get_table_size(table)  # MB
+    speed = size / time
+    print(speed)  # 普通迁移的速度
+    drop_tb(table)
+    return speed
 
 
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
-    # db_host = '10.28.20.101'
-    db_host = '127.0.0.1'
+    db_host = '10.28.23.174'
     db_port = 5138
     db_user = 'SYSDBA'
     db_pwd = 'SYSDBA'
     db_name = 'SYSTEM'
     # db_host, db_port, db_user, db_pwd, db_name = parse_args()
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    cur.execute('set max_loop_num to 0')
+    cur.execute('set max_trans_modify to 0')
+    table = 'procuct_555'
+    rebuild_tables(table)
+    time = once_proc(table)
+    ## drop_tb('product555')
+    size = get_table_size(table)  # MB
+    speed = size / time
+    print(speed)  # 普通迁移的速度
+    drop_tb(table)
 
-    # create_random_package()
-    # cur.execute('set max_loop_num to 0')
-    # cur.execute('set max_trans_modify to 0')
-    # rebuild_tables()
-    # once_proc(tmp_n=1000, proc_nums=10, parallel_n=100)
-    # table = 'product3'
-    # analyze_sql = f"EXEC dbms_stat.analyze_table('{db_user}.{table}','all columns',1, null)"
-    # cur.execute(analyze_sql)
-
-    # sql = """q'\select * from product_test3; >$ product_test3.txt ;\'"""
-    # sql = """select * from product_test3"""
-    sql = r"""
-    sqlldr table=sysdba.test1 datafile=C:\Users\Administrator\Desktop\test\time\test.csv ft='|' rt=X'0d0a'  log=./load.log errlog=./loaderr.log mode=replace  imp_type=block;
-    """
-    cur.execute(sql)
-    rows = cur.fetchall()
-    print(rows)
-
-#  每天500w, 加一个中文字段1-100随机字符，一个月数据
-"""
-目的： 通过临时表生成数据，在插入正式表， 在执行并发。
-"""
+# 目的： 从临时表中取出1w数据到正式表
+#  目的： 通过facker 快速insert batch 插入

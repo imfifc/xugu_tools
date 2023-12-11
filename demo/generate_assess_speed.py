@@ -6,15 +6,14 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from multiprocessing import freeze_support
+# from random import seed
 from faker import Faker
 import xgcondb
 
 
-# from random import seed
-
-
-def get_cur(db_host, db_port, db_user, db_pwd, db_name):
-    conn = xgcondb.connect(host=db_host, port=db_port, database=db_name, user=db_user, password=db_pwd, charset="utf8")
+def get_cur(db_config):
+    conn = xgcondb.connect(host=db_config['db_host'], port=db_config['db_port'], database=db_config['db_name'],
+                           user=db_config['db_user'], password=db_config['db_pwd'], charset="utf8")
     cur = conn.cursor()
     return cur
 
@@ -76,14 +75,14 @@ def parse_args():
     return host, port, user, password, db
 
 
-def drop_tb(table):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+def drop_tb(table, db_config):
+    cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
     cur.execute(sql)
 
 
-def create_product_tb(table):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+def create_product_tb(table, db_config):
+    cur = get_cur(db_config)
     sql = f"""
     create table {table}(
     product_no varchar(50) not null,
@@ -98,23 +97,23 @@ def create_product_tb(table):
     cur.execute(sql)
 
 
-def show(table):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+def show(table, db_config):
+    cur = get_cur(db_config)
     sql = f'select count(*) from {table}'
-    analyze_sql = f"EXEC dbms_stat.analyze_table('{db_user}.{table}','all columns',1, null)"
+    analyze_sql = f"EXEC dbms_stat.analyze_table('{db_config['db_user']}.{table}','all columns',1, null)"
     data = cur.execute(sql)
     row = cur.fetchone()
     print(f'{table} : {row}')
     cur.execute(analyze_sql)
 
 
-def rebuild_tables(table):
+def rebuild_tables(table, db_config):
     """
     重建表： 先删除后重建
     :return:
     """
-    drop_tb(table)
-    create_product_tb(table)
+    drop_tb(table, db_config)
+    create_product_tb(table, db_config)
 
 
 def generate_dates(n):
@@ -124,8 +123,8 @@ def generate_dates(n):
     return date_strings
 
 
-def insert_batch(table, date, nums, db_host, db_port, db_user, db_pwd, db_name):
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+def insert_batch(table, date, nums, db_config):
+    cur = get_cur(db_config)
     sql = f"insert into {table} values(?,?,?,?,?,?,?)"
     fake = Faker(locale='zh_CN')
     Faker.seed()  # 使用不同的种子
@@ -141,11 +140,11 @@ def insert_batch(table, date, nums, db_host, db_port, db_user, db_pwd, db_name):
 
 
 # 多进程调用
-def multi_process(table, dates, nums, db_host, db_port, db_user, db_pwd, db_name):
+def multi_process(table, dates, nums, db_config):
     processes = []
     for date in dates:
         process = multiprocessing.Process(target=insert_batch,
-                                          args=(table, date, nums, db_host, db_port, db_user, db_pwd, db_name))
+                                          args=(table, date, nums, db_config))
         processes.append(process)
     for process in processes:
         process.start()
@@ -154,26 +153,26 @@ def multi_process(table, dates, nums, db_host, db_port, db_user, db_pwd, db_name
         process.join()
 
 
-def once_proc(table):
+def once_proc(table, db_config):
     nums = 25000
     days = 40
     dates = generate_dates(days)
     # print(dates)
     start = time.time()
-    multi_process(table, dates, nums, db_host, db_port, db_user, db_pwd, db_name)
+    multi_process(table, dates, nums, db_config)
     end = time.time() - start
-    show(table)
+    show(table, db_config)
     print(f'耗时{end:.2f}秒', f'tps:{(nums * days / end):.2f} 行/s')
     return end
 
 
-def get_table_size(table):
+def get_table_size(table, db_config):
     sql = f"""
     select d.db_name,s.schema_name,t.table_name,count(*)*8 as cnt from sys_schemas s,sys_tables t,sys_gstores g,sys_databases d 
     where g.obj_id=t.table_id and s.schema_id=t.schema_id and s.db_id=t.db_id and g.db_id=d.db_id  and t.db_id=d.db_id and t.table_name='{table}'
     group by t.table_name,s.schema_name,d.db_name 
     """
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    cur = get_cur(db_config)
     data = cur.execute(sql)
     row = cur.fetchone()
     if row:
@@ -190,40 +189,30 @@ def get_speed():
     # db_pwd = 'SYSDBA'
     # db_name = 'SYSTEM'
     db_host, db_port, db_user, db_pwd, db_name = parse_args()
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
+    db_config = {
+        'db_host': db_host,
+        'db_port': db_port,
+        'db_user': db_user,
+        'db_pwd': db_pwd,
+        'db_name': db_name,
+    }
+    cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
-    table = 'procuct_555'
-    rebuild_tables(table)
-    time = once_proc(table)
+
+    table = 'procuct_666'
+    rebuild_tables(table, db_config)
+    time = once_proc(table, db_config)
     ## drop_tb('product555')
-    size = get_table_size(table)  # MB
+    size = get_table_size(table, db_config)  # MB
     speed = size / time
     print(speed)  # 普通迁移的速度
-    drop_tb(table)
+    drop_tb(table, db_config)
     return speed
 
 
 if __name__ == '__main__':
-    if sys.platform == 'win32':
-        freeze_support()  # linux 不需要
-    db_host = '10.28.23.174'
-    db_port = 5138
-    db_user = 'SYSDBA'
-    db_pwd = 'SYSDBA'
-    db_name = 'SYSTEM'
-    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
-    cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
-    cur.execute('set max_loop_num to 0')
-    cur.execute('set max_trans_modify to 0')
-    table = 'procuct_555'
-    rebuild_tables(table)
-    time = once_proc(table)
-    ## drop_tb('product555')
-    size = get_table_size(table)  # MB
-    speed = size / time
-    print(speed)  # 普通迁移的速度
-    drop_tb(table)
+    get_speed()
 
 # 目的： 从临时表中取出1w数据到正式表
 #  目的： 通过facker 快速insert batch 插入

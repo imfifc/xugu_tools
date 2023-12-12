@@ -2,13 +2,16 @@ import argparse
 import csv
 import os
 import queue
+import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import freeze_support
 from pathlib import Path
 
 import pymysql
 from pymysql.cursors import DictCursor
+from generate_assess_speed import get_speed
 
 # 创建一个线程锁
 lock = threading.Lock()
@@ -61,22 +64,6 @@ class ConnectionPool:
         return None
 
 
-# def write_csv(filename, data: [{}], sql=None):
-#     filename = os.path.join(dir, filename)
-#     with lock:
-#         # 获取所有字段名，这里假设所有字典中的键相同
-#         if data:
-#             fieldnames = data[0].keys()
-#             with open(filename, 'a+', newline='', encoding='utf-8') as f:
-#                 write = csv.writer(f)
-#                 if sql is not None:
-#                     write.writerow([sql])
-#
-#                 writer = csv.DictWriter(f, fieldnames=fieldnames)
-#                 writer.writeheader()
-#                 writer.writerows(data)
-
-
 def write_csv(filename, data):
     """
     data: [
@@ -92,12 +79,6 @@ def write_csv(filename, data):
 
     filename = os.path.join(dir, filename)
     with open(filename, 'a+', newline='', errors='ignore') as f:
-        # for i in data:
-        #     if i[0] and i[0][0]:
-        #         fieldnames = i[0][0].keys()
-        #         writer1 = csv.DictWriter(f, fieldnames=fieldnames)
-        #         write = csv.writer(f)
-        #         break
         writer1 = csv.DictWriter(f, fieldnames=[])
         write = csv.writer(f)
         for item in data:
@@ -583,7 +564,7 @@ def status_variables():
     write_csv('show variables.csv', [(data2, temp_sql2)])
 
 
-def get_tablespace():
+def get_tablespace(is_speed=True):
     """
     获取表空间大小
     select
@@ -610,6 +591,14 @@ def get_tablespace():
     """
     datas = pool.executor(sql)
     temp_sql = f'db--table--sql: -- -- {sql}'
+    if is_speed:
+        speed = get_speed()
+        for i in datas:
+            i.update({
+                '迁移后大小(MB)': float(i.get('大小(MB)')) * 1.1,
+                '迁移所需时间(秒)': round(float(i.get('大小(MB)')) / speed * 18, 2)
+            })
+    # print(datas)
     write_csv('5.每张表大小.csv', [(datas, temp_sql)])
 
 
@@ -810,6 +799,11 @@ def parse_args():
     verbose = args.verbose
 
     # 在这里可以根据解析的参数执行相应的操作
+    if len(sys.argv) == 1:
+        host = input("请输入ip: ")
+        port = int(input("请输入端口: "))
+        user = input("请输入用户: ")
+        password = input("请输入密码: ")
     if verbose:
         print("显示详细信息")
     if not host:
@@ -831,19 +825,13 @@ def parse_args():
 
 
 if __name__ == "__main__":
-    # 使用连接池
-    # db_host = '192.168.2.212'
-    # db_user = 'ecology'
-    # db_pwd = 'Weaver@2023'
-    # db_port = 3306
-    # db_name = 'ecology'
-    # db_charset = 'utf8'
-
-    # db_host = '127.0.0.1'
-    # db_user = 'root'
-    # db_pwd = '123456'
-    # db_port = 3306
-    # # db_name = 'idc'
+    if sys.platform == 'win32':
+        freeze_support()  # linux 不需要
+    # host = '10.28.23.207'
+    # port = 3306
+    # user = 'root'
+    # password = 'Admin@123'
+    # db = 'SYSTEM'
     # db_charset = 'utf8'
     host, port, user, password = parse_args()
     pool = ConnectionPool(
@@ -861,10 +849,18 @@ if __name__ == "__main__":
     print(dir)
     start = time.time()
     task_names = [get_table_space, get_db_obj, user_table_space, get_tb_column, count_table_culumns,
-                  user_privilege, keywords, get_procedure, get_function, get_view,get_db_columu_type_and_count,
-                  db_statistics, status_variables, get_tablespace, get_event_job, get_triggers]
+                  user_privilege, keywords, get_procedure, get_function, get_view, get_db_columu_type_and_count,
+                  db_statistics, status_variables, get_event_job, get_triggers]
     get_db_and_charset()
     # get_primary_key_and_foreige_key()
     main(task_names)
+    get_tablespace(is_speed=False)
     summary()
     print(f'耗时: {time.time() - start:.2f} 秒')
+    is_speed = input('\n请确定是否需要评估迁移时间(默认否) Y/N : ')
+    if is_speed.lower().strip() == 'y':
+        get_tablespace(is_speed=True)
+    input('\nPress Enter to exit…')
+
+
+# pyinstaller -c -F   --clean  --hidden-import=xgcondb   --hidden-import=PyMySQL    connection_pool.py

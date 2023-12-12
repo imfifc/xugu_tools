@@ -5,7 +5,9 @@ import queue
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import freeze_support
 from pathlib import Path
+from generate_assess_speed import get_speed
 import xgcondb
 
 BASE_PATH = str(Path(__file__).parent)
@@ -187,20 +189,27 @@ def get_db_size():
     write_csv('4.库大小.csv', [(data, temp_sql)])
 
 
-def get_table_size():
+def get_table_size(is_speed=True):
     """
     5.表大小
     :return:
     """
     sql = """
-    select db_name,schema_name,table_name,s.cnt*8||'M' sizes from dba_tables t
-    join sys_schemas s on t.schema_id=s.schema_id and t.db_id=s.db_id 
-    join sys_databases d on t.db_id=d.db_id 
-    join (select head_no,count(*) cnt from sys_gstores group by head_no) s on s.head_no= t.gsto_no
-    order by db_name,schema_name,sizes desc
+    select d.db_name,s.schema_name,t.table_name,count(*)*8 as "大小(MB)",count(*)*8*1 as "迁移后大小(MB)" from sys_schemas s,sys_tables t,sys_gstores g,sys_databases d 
+    where g.obj_id=t.table_id and s.schema_id=t.schema_id and s.db_id=t.db_id and g.db_id=d.db_id  and t.db_id=d.db_id 
+    group by t.table_name,s.schema_name,d.db_name order by d.db_name,s.schema_name,count(*) desc; 
     """
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
+    if is_speed:
+        speed = get_speed()
+        # print(speed)
+        for i in data:
+            i.update({
+                '迁移所需时间(秒)': round(i.get('迁移后大小(MB)') / speed, 2)
+            })
+
+    # print(data)
     write_csv('5.查看表大小.csv', [(data, temp_sql)])
 
 
@@ -425,25 +434,14 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    # db_host = '127.0.0.1'
-    # db_port = 5138
-    # db_user = 'SYSDBA'
-    # db_pwd = 'SYSDBA'
-    # db_name = 'SYSTEM'
-    # # db_charset = 'utf8'
-    #
-    # pool = ConnectionPool(
-    #     max_connections=100,
-    #     connection_params={
-    #         "user": db_user,
-    #         "password": db_pwd,
-    #         "host": db_host,
-    #         "port": db_port,
-    #         # "db"
-    #         "database": db_name,
-    #         # "charset": 'utf8',
-    #     },
-    # )
+    if sys.platform == 'win32':
+        freeze_support()  # linux 不需要
+    # host = '127.0.0.1'
+    # port = 5138
+    # user = 'SYSDBA'
+    # password = 'SYSDBA'
+    # db = 'SYSTEM'
+    # db_charset = 'utf8'
     host, port, user, password, db = parse_args()
     pool = ConnectionPool(
         max_connections=100,
@@ -460,9 +458,13 @@ if __name__ == '__main__':
     os.path.exists(dir) or os.makedirs(dir)
     print(dir)
     start = time.time()
-    tasknames = [get_db_charsets, get_db_object, get_db_all_size, get_db_size, get_table_size,
-                 get_table_nums, get_foreign_key_and_primary_key]
+    tasknames = [get_db_charsets, get_db_object, get_db_all_size, get_db_size, get_table_nums,
+                 get_foreign_key_and_primary_key]
     main(tasknames)
+    get_table_size(is_speed=False)
     summary()
     print(f'耗时: {time.time() - start:.2f} 秒')
+    is_speed = input('\n请确定是否需要评估迁移时间(默认否) Y/N : ')
+    if is_speed.lower().strip() == 'y':
+        get_table_size(is_speed=True)
     input('\nPress Enter to exit…')

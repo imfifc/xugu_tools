@@ -27,7 +27,7 @@ def parse_args():
     # parser.add_argument('input_file', help='输入文件的路径')
     # 添加可选参数
     # parser.add_argument('-o', '--output', help='输出文件的路径')
-    parser.add_argument('-H', '--host', help='输入数据库ip地址')
+    parser.add_argument('-H', '--host', help='输入迁移目标数据库ip地址')
     parser.add_argument('-P', '--port', help='Port number 数据库端口', type=int, default=5138)
     parser.add_argument('-u', '--user', help='输入数据库 用户')
     parser.add_argument('-p', '--pwd', help='输入数据库密码')
@@ -47,11 +47,11 @@ def parse_args():
 
     # 在这里可以根据解析的参数执行相应的操作
     if len(sys.argv) == 1:
-        host = input("请输入ip: ")
-        port = input("请输入端口: ")
-        user = input("请输入用户: ")
-        password = input("请输入密码: ")
-        db = input("请输入数据库: ")
+        host = input("请输入迁移目标源数据库ip: ")
+        port = input("请输入目标源端口: ")
+        user = input("请输入目标源用户: ")
+        password = input("请输入目标源密码: ")
+        db = input("请输入目标源数据库: ")
     if verbose:
         print("显示详细信息")
     if not host:
@@ -104,7 +104,7 @@ def show(table, db_config):
     data = cur.execute(sql)
     row = cur.fetchone()
     print(f'{table} : {row}')
-    cur.execute(analyze_sql)
+    # cur.execute(analyze_sql)
 
 
 def rebuild_tables(table, db_config):
@@ -188,7 +188,18 @@ def get_speed():
     # db_user = 'SYSDBA'
     # db_pwd = 'SYSDBA'
     # db_name = 'SYSTEM'
-    db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    # if len(sys.argv) == 1:
+    #     db_host = input("请输入迁移目标源数据库ip: ")
+    #     db_port = input("请输入目标源端口: ")
+    #     db_user = input("请输入目标源用户: ")
+    #     db_pwd = input("请输入目标源密码: ")
+    #     db_name = input("请输入目标源数据库: ")
+    db_host = input("请输入迁移目标源数据库ip: ")
+    db_port = input("请输入目标源端口: ")
+    db_user = input("请输入目标源用户: ")
+    db_pwd = input("请输入目标源密码: ")
+    db_name = input("请输入目标源数据库: ")
     db_config = {
         'db_host': db_host,
         'db_port': db_port,
@@ -200,13 +211,13 @@ def get_speed():
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
 
-    table = 'procuct_666'
+    table = 'procuct_sss'
     rebuild_tables(table, db_config)
     time = once_proc(table, db_config)
     ## drop_tb('product555')
     size = get_table_size(table, db_config)  # MB
     speed = size / time
-    print(speed)  # 普通迁移的速度
+    print(f"{round(speed,2)}MB/S")  # 普通迁移的速度
     drop_tb(table, db_config)
     return speed
 

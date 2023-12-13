@@ -129,8 +129,8 @@ def evening_daka(driver):
     except Exception as e:
         print('evening daka 异常')
     # driver.save_screenshot('evening.jpg')
-    driver.find_element_by_css_selector('.info-last .content div:nth-child(2)').click()
-    driver.find_element_by_css_selector('.info-last .content div:nth-child(2) .resign').click()
+    driver.find_element_by_css_selector('.info-last .content div:last-child').click()
+    driver.find_element_by_css_selector('.info-last .content  .resign').click()
     time.sleep(1)
     update_time = driver.find_element_by_css_selector('.info.info-last .signTime.text-elli')
     print(f'晚上打卡更新时间: {update_time.text}')
@@ -150,9 +150,9 @@ def punch_clock():
         current_minutes = current_time.tm_hour * 60 + current_time.tm_min
         # punch_time = current_minutes + random_minutes
         if morning_start <= current_minutes <= morning_end:
-            random_minutes = random.randint(0, 2)
-            print(f'随机时间{random_minutes * 30}秒')
-            time.sleep(random_minutes * 30)
+            random_minutes = random.randint(0, 5)
+            print(f'随机时间{random_minutes * 60}秒')
+            time.sleep(random_minutes * 60)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
@@ -164,9 +164,9 @@ def punch_clock():
                 continue
 
         elif evening_start <= current_minutes <= evening_end:
-            random_minutes = random.randint(0, 2)
-            print(f'随机时间{random_minutes * 30}秒')
-            time.sleep(random_minutes * 30)
+            random_minutes = random.randint(0, 5)
+            print(f'随机时间{random_minutes * 60}秒')
+            time.sleep(random_minutes * 60)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
@@ -196,8 +196,8 @@ if __name__ == '__main__':
 
 
     # my_job()
-    schedule.every().day.at("08:10").do(my_job)
-    schedule.every().day.at("08:20").do(my_job)
+    # schedule.every().day.at("08:10").do(my_job)
+    schedule.every().day.at("08:16").do(my_job)
     # schedule.every().day.at("15:10").do(my_job)
     schedule.every().day.at("18:00").do(my_job)
     schedule.every().day.at("18:20").do(my_job)

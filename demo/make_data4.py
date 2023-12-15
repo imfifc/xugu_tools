@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
 import multiprocessing
-import queue
 import sys
 import time
 from datetime import datetime, timedelta
@@ -312,4 +311,4 @@ if __name__ == '__main__':
         if q == 'q' or q == 'Q':
             break
 
-#   每天500w, 加一个中文字段1-100随机字符，一个月数据
+#   每天500w, 加一个中文字段1-100随机字符，一个月数据 : 随机中文，自动扩展分区， 单insert 无批量

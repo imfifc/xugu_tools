@@ -256,3 +256,5 @@ if __name__ == '__main__':
         q = input('\nPress q to exit…or continue')
         if q == 'q' or q == 'Q':
             break
+
+#  目的： 通过facker 快速insert batch 插入

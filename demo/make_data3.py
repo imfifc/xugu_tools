@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 import argparse
-import concurrent.futures
 import multiprocessing
-import queue
-import re
 import sys
 import time
 from multiprocessing import freeze_support
@@ -230,9 +227,11 @@ def create_procduct_test():
 def show(table):
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
     sql = f'select count(*) from {table}'
+    analyze_sql = f"EXEC dbms_stat.analyze_table('{db_user}.{table}','all columns',1, null)"
     data = cur.execute(sql)
     row = cur.fetchone()
     print(f'{table} : {row}')
+    cur.execute(analyze_sql)
 
 
 def rebuild_tables():
@@ -295,7 +294,7 @@ if __name__ == '__main__':
     print(xgcondb.version())
     freeze_support()
     db_host = '10.28.20.101'
-    db_port = 6325
+    db_port = 5145
     db_user = 'SYSDBA'
     db_pwd = 'SYSDBA'
     db_name = 'SYSTEM'
@@ -317,4 +316,7 @@ if __name__ == '__main__':
         if q == 'q' or q == 'Q':
             break
 
-# todo  每天500w, 加一个中文字段1-100随机字符，一个月数据
+#  每天500w, 加一个中文字段1-100随机字符，一个月数据
+"""
+目的： 通过临时表生成数据，在插入正式表， 在执行并发。
+"""

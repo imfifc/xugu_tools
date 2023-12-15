@@ -539,4 +539,4 @@ if __name__ == '__main__':
         is_speed = input('\n请确定是否需要评估迁移时间(默认否) Y/N : ')
         if is_speed.lower().strip() == 'y':
             get_table_size(is_speed=True)
-        input('\nPress Enter to exit…')
+    input('\nPress Enter to exit…')

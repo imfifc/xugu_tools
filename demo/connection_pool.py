@@ -158,6 +158,40 @@ def get_db_object():
     union  all
     select 'table_partitions' as type,d.db_name as db,count(*) from dba_partis p left join sys_databases d on d.db_id=p.db_id group by d.db_name
     """
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        sql = """
+        select 'database' as type, db_name as db,count(*) from dba_databases group by db_name
+        union  all
+        select 'schemas' as type,d.db_name as db,count(*) from dba_schemas s left join dba_databases d on d.db_id=s.db_id where s.schema_name not in ('SYSSSO','SYSAUDITOR') group by d.db_name
+        union  all
+        select 'tables' as type,d.db_name as db,count(*) from dba_tables t left join dba_databases d on d.db_id=t.db_id group by d.db_name
+        union  all
+        select 'views' as type,d.db_name as db,count(*) from dba_views v left join dba_databases d on d.db_id=v.db_id group by d.db_name
+        union  all
+        select 'sequences' as type,d.db_name as db,count(*) from dba_sequences s left join dba_databases d on d.db_id=s.db_id group by d.db_name
+        union  all
+        select 'package head' as type,d.db_name as db,count(*) from dba_packages p left join dba_databases d on d.db_id=p.db_id where p.spec is not null group by d.db_name
+        union  all
+        select 'package body' as type,d.db_name as db,count(*) from dba_packages p left join dba_databases d on d.db_id=p.db_id where p.body is not null group by d.db_name
+        union  all
+        select 'procedure' as type,d.db_name as db,count(*) from dba_procedures p left join dba_databases d on d.db_id=p.db_id where p.ret_type is null group by d.db_name
+        union  all
+        select 'function' as type,d.db_name as db,count(*) from dba_procedures p left join dba_databases d on d.db_id=p.db_id where p.ret_type is not null group by d.db_name
+        union  all
+        select 'trigger' as type,d.db_name as db,count(*) from dba_triggers t left join dba_databases d on d.db_id=t.db_id group by d.db_name
+        union  all
+        select 'synonym' as type,d.db_name as db,count(*) from dba_synonyms s left join dba_databases d on d.db_id=s.db_id group by d.db_name
+        union  all
+        select 'udt type' as type,d.db_name as db,count(*) from dba_types t left join dba_databases d on d.db_id=t.db_id group by d.db_name
+        union  all
+        select 'job' as type,d.db_name as db,count(*) from dba_jobs j left join dba_databases d on d.db_id=j.db_id group by d.db_name
+        union  all
+        select 'indexes' as type,d.db_name as db,count(*) from dba_indexes i left join dba_databases d on d.db_id=i.db_id group by d.db_name
+        union  all
+        select 'index_partitions' as type,d.db_name as db,count(*) from dba_idx_partis i left join dba_databases d on d.db_id=i.db_id group by d.db_name
+        union  all
+        select 'table_partitions' as type,d.db_name as db,count(*) from dba_partis p left join dba_databases d on d.db_id=p.db_id group by d.db_name
+        """
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
     write_csv('2.数据库对象及个数.csv', [(data, temp_sql)])
@@ -169,10 +203,14 @@ def get_db_all_size():
     :return:
     """
     sql = "select sum(sd.curr_size)/1024 || 'G' from sys_all_tablespaces st join sys_all_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid"
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        sql = "select sum(sd.curr_size)/1024 || 'G' from dba_tablespaces st join dba_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid"
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
     write_csv('3.集群大小.csv', [(data, temp_sql)])
     sql2 = "select sd.nodeid,sum(sd.curr_size) || 'M' from sys_all_tablespaces st join sys_all_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid  group by sd.nodeid"
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        sql2 = "select sd.nodeid,sum(sd.curr_size)/1024 || 'G' from dba_tablespaces st join dba_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid  group by sd.nodeid"
     temp_sql2 = f'db--table--sql: --  -- {sql2}'
     data2 = pool.executor(sql)
     write_csv('3.集群个节点大小.csv', [(data2, temp_sql2)])
@@ -184,6 +222,8 @@ def get_db_size():
     :return:
     """
     sql = "select db_name, count(*)*8 ||'MB' as cnt  from sys_gstores gs left join sys_databases d on d.db_id=gs.db_id  group by d.db_name"
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        return None
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
     write_csv('4.库大小.csv', [(data, temp_sql)])
@@ -199,6 +239,8 @@ def get_table_size(is_speed=True):
     where g.obj_id=t.table_id and s.schema_id=t.schema_id and s.db_id=t.db_id and g.db_id=d.db_id  and t.db_id=d.db_id 
     group by t.table_name,s.schema_name,d.db_name order by d.db_name,s.schema_name,count(*) desc; 
     """
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        return None
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
     if is_speed:
@@ -211,6 +253,7 @@ def get_table_size(is_speed=True):
 
     # print(data)
     write_csv('5.查看表大小.csv', [(data, temp_sql)])
+    return True
 
 
 def get_table_nums():
@@ -226,6 +269,8 @@ def get_table_nums():
     left join (select gsto_no,row_num from sys_stores) a on a.gsto_no=t.gsto_no 
     order by db_name,schema_name,a.row_num desc
     """
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        return None
     data = pool.executor(sql)
     temp_sql = f'db--table--sql: --  -- {sql}'
     write_csv('6.表行数.csv', [(data, temp_sql)])
@@ -345,6 +390,32 @@ def summary():
     union all  
     select  '集群大小' type, sum(sd.curr_size)/1024 || 'G' cnt from sys_all_tablespaces st join sys_all_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid
     """
+    if pool.connection_params.get('database').lower().strip() != 'system':
+        sql = """
+            select '数据库版本' type,version cnt
+            union all
+            select '数据库' type,count(*)::varchar from dba_databases
+            union all
+            select '当前库模式' type,count(*) ::varchar cnt from dba_schemas s left join dba_databases d on d.db_id=s.db_id 
+            union all
+            select '表' type,count(*)::varchar cnt from  dba_tables t left join dba_databases d on d.db_id=t.db_id
+            union all
+            select '触发器' type,count(*)::varchar cnt from dba_triggers t left join dba_databases d on d.db_id=t.db_id group by d.db_name
+            union all
+            select '存储过程' type,count(*)::varchar cnt from dba_procedures p left join dba_databases d on d.db_id=p.db_id where p.ret_type is null group by d.db_name
+            union all
+            select '函数' type,count(*)::varchar cnt from dba_procedures p left join dba_databases d on d.db_id=p.db_id where p.ret_type is not null group by d.db_name
+            union all
+            select '视图' type,count(*)::varchar cnt from dba_views v left join dba_databases d on d.db_id=v.db_id group by d.db_name
+            union all
+            select '索引' type,count(*)::varchar cnt from  dba_indexes i left join dba_databases d on d.db_id=i.db_id group by d.db_name
+            union all
+            select '分区表' type,count(*)::varchar cnt from dba_partis p left join dba_databases d on d.db_id=p.db_id group by d.db_name
+            union all 
+            SELECT '用户' type ,count(*)::varchar  cnt FROM dba_users
+            union all
+            select  '集群大小' type, sum(sd.curr_size)/1024 || 'G' cnt from dba_tablespaces st join dba_datafiles sd on st.space_id=sd.space_id and st.nodeid=sd.nodeid
+        """
     data = pool.executor(sql)
     for i in data:
         print(f"{i.get('TYPE')}: {i.get('CNT')}")
@@ -461,10 +532,11 @@ if __name__ == '__main__':
     tasknames = [get_db_charsets, get_db_object, get_db_all_size, get_db_size, get_table_nums,
                  get_foreign_key_and_primary_key]
     main(tasknames)
-    get_table_size(is_speed=False)
+    res = get_table_size(is_speed=False)
     summary()
     print(f'耗时: {time.time() - start:.2f} 秒')
-    is_speed = input('\n请确定是否需要评估迁移时间(默认否) Y/N : ')
-    if is_speed.lower().strip() == 'y':
-        get_table_size(is_speed=True)
-    input('\nPress Enter to exit…')
+    if res:
+        is_speed = input('\n请确定是否需要评估迁移时间(默认否) Y/N : ')
+        if is_speed.lower().strip() == 'y':
+            get_table_size(is_speed=True)
+        input('\nPress Enter to exit…')

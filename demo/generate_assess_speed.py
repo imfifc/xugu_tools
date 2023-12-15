@@ -199,7 +199,7 @@ def get_speed():
     db_port = input("请输入目标源端口: ")
     db_user = input("请输入目标源用户: ")
     db_pwd = input("请输入目标源密码: ")
-    db_name = input("请输入目标源数据库: ")
+    db_name = input("请输入目标源数据库(默认SYSTEM): ") or 'SYSTEM'
     db_config = {
         'db_host': db_host,
         'db_port': db_port,

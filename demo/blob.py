@@ -169,7 +169,8 @@ def insert_many(path, nums, table, db_config):
     # blob_buf = open(path, "rb").read()
     # print(111,len(blob_buf))
     cur.cleartype()
-    cur.setinputtype((xgcondb.XG_C_INTEGER, xgcondb.XG_C_BLOB))
+    cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BLOB, xgcondb.XG_C_SHORT,
+                      xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_level = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                   1900, 2000]
     rows = []

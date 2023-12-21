@@ -1,3 +1,4 @@
+import argparse
 import multiprocessing
 import sys
 import os
@@ -167,29 +168,26 @@ def once_proc(table, db_config):
     # ff = f"r'{filepath}'"
     # print(ff)
     path2 = os.path.isfile(path)
-    print(path2)
-    # print(path)
-    # if path:
-    # path = '111'
-    nums = int(input("请输入表行数: "))
-    parallel_n = int(input("请输入并发数: "))
-
-    start = time.time()
-    multi_process(parallel_n, path, nums, table, db_config)
-    end = time.time() - start
-    show(table, db_config)
-    print(f'耗时{end:.2f}秒', f'tps:{(nums * parallel_n / end):.2f} 行/s')
+    # print(path2)
+    if path2:
+        nums = int(input("请输入表行数: "))
+        parallel_n = int(input("请输入并发数: "))
+        start = time.time()
+        multi_process(parallel_n, path, nums, table, db_config)
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒', f'tps:{(nums * parallel_n / end):.2f} 行/s')
 
 
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
-    db_host = '10.28.20.101'
-    db_port = 5136
-    db_user = 'SYSDBA'
-    db_pwd = 'SYSDBA'
-    db_name = 'SYSTEM'
-    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    # db_host = '10.28.20.101'
+    # db_port = 5136
+    # db_user = 'SYSDBA'
+    # db_pwd = 'SYSDBA'
+    # db_name = 'SYSTEM'
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
     db_config = {
         'db_host': db_host,
         'db_port': db_port,

@@ -114,7 +114,7 @@ def rebuild_table(table, db_config):
     CREATE TABLE {table} (
         X_ZHOU SMALLINT COMMENT 'X轴',
         Y_ZHOU SMALLINT COMMENT 'Y轴',
-        val_data blob COMMENT '数值',
+        val_data binary COMMENT '数值',
         high_level SMALLINT COMMENT '高度',
         val_time TIMESTAMP  COMMENT '资料时间',
         validtime TIMESTAMP COMMENT '预报时效',
@@ -169,7 +169,7 @@ def insert_many(path, nums, table, db_config):
     # blob_buf = open(path, "rb").read()
     # print(111,len(blob_buf))
     cur.cleartype()
-    cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BLOB, xgcondb.XG_C_SHORT,
+    cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
                       xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_level = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                   1900, 2000]
@@ -210,7 +210,7 @@ def once_proc(table, path, db_config):
     # ff = f"r'{filepath}'"
     # print(ff)
     path2 = os.path.isfile(path)
-    print(path2)
+    print(f"文件是否存在: {path2}")
     if path2:
         nums = int(input("请输入表行数: "))
         parallel_n = int(input("请输入并发数: "))

@@ -1,5 +1,6 @@
 import argparse
 import multiprocessing
+import random
 import sys
 import os
 import time
@@ -50,6 +51,7 @@ def parse_args():
     parser.add_argument('-u', '--user', help='输入数据库 用户')
     parser.add_argument('-p', '--pwd', help='输入数据库密码')
     parser.add_argument('-d', '--database_name', help='输入数据库名')
+    parser.add_argument('-f', '--file', help='输入blob文件绝对路径')
     # 添加标志参数
     parser.add_argument('-v', '--verbose', action='store_true', help='是否显示详细信息')
     args = parser.parse_args()
@@ -62,6 +64,7 @@ def parse_args():
     password = args.pwd
     db = args.database_name
     verbose = args.verbose
+    path = args.file
 
     # 在这里可以根据解析的参数执行相应的操作
     if len(sys.argv) == 1:
@@ -70,6 +73,7 @@ def parse_args():
         user = input("请输入用户: ")
         password = input("请输入密码: ")
         db = input("请输入数据库: ")
+        path = input("输入blob文件绝对路径: ")
     if verbose:
         print("显示详细信息")
     if not host:
@@ -87,10 +91,13 @@ def parse_args():
     if not db:
         parser.print_help()
         raise Exception('没有输入数据库 !!!\n')
+    if not path:
+        parser.print_help()
+        raise Exception('没有输入blob 文件路径 !!!\n')
     # if host and port and user and password and db:
     #     print(f'host: {host} port: {port} user: {user} password: {password} db: {db} \n')
-
-    return host, port, user, password, db
+    print(host, port, user, password, db, path)
+    return host, port, user, password, db, path.strip()
 
 
 def get_cur(db_config):
@@ -103,7 +110,37 @@ def get_cur(db_config):
 def rebuild_table(table, db_config):
     cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
-    sql2 = f"create table {table}(id int,  name blob) hotspot 20 copy number 1"
+    sql2 = f""" 
+    CREATE TABLE {table} (
+        X_ZHOU SMALLINT COMMENT 'X轴',
+        Y_ZHOU SMALLINT COMMENT 'Y轴',
+        val_data blob COMMENT '数值',
+        high_level SMALLINT COMMENT '高度',
+        val_time TIMESTAMP  COMMENT '资料时间',
+        validtime TIMESTAMP COMMENT '预报时效',
+        strat_time  TIMESTAMP COMMENT '起报时效'
+        )PARTITION BY list(high_level) PARTITIONS 
+        (PART1 values(1),
+        PART2 values(100),
+        PART3 values(200),
+        PART4 values(300),
+        PART5 values(400),
+        PART6 values(500),
+        PART7 values(600),
+        PART8 values(700),
+        PART9 values(800),
+        PART10 values(900),
+        PART11 values(1000),
+        PART12 values(1100),
+        PART13 values(1200),
+        PART14 values(1300),
+        PART15 values(1400),
+        PART16 values(1500),
+        PART17 values(1600),
+        PART18 values(1700),
+        PART19 values(1800),
+        PART20 values(1900),
+        PART21 values(2000)) hotspot 20 copy number 1 COMMENT '比湿数值预报表' """
     cur.execute(sql)
     cur.execute(sql2)
 
@@ -126,17 +163,21 @@ def insert_batch(nums, table, db_config):
 
 def insert_many(path, nums, table, db_config):
     cur = get_cur(db_config)
-    sql = f"insert into {table} values(?,?)"
+    sql = f"insert into {table} values(?,?,?,?,sysdate,sysdate,sysdate)"
     # blob_buf = open("./xg_lob/test_blob.jpg", "rb").read()
     blob_buf = open(path, "rb").read()
     # blob_buf = open(path, "rb").read()
+    # print(111,len(blob_buf))
     cur.cleartype()
     cur.setinputtype((xgcondb.XG_C_INTEGER, xgcondb.XG_C_BLOB))
+    high_level = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
+                  1900, 2000]
     rows = []
     for i in range(nums):
-        data = (i, blob_buf)
+        data = (random.randint(1, 100), random.randint(1, 100), blob_buf, random.choice(high_level))
         rows.append(data)
     # print(len(rows))
+    # print(rows[:1])
     cur.executemany(sql, tuple(rows))
     # print(cur.rowcount)
 
@@ -161,14 +202,14 @@ def multi_process(n, path, nums, table, db_config):
         process.join()
 
 
-def once_proc(table, db_config):
-    path = input('请输入blob文件路径：')
+def once_proc(table, path, db_config):
+    # path = input('请输入blob文件路径：')
     # print(filepath)
     # # file_path = r'C:\path\to\your\file.txt'
     # ff = f"r'{filepath}'"
     # print(ff)
     path2 = os.path.isfile(path)
-    # print(path2)
+    print(path2)
     if path2:
         nums = int(input("请输入表行数: "))
         parallel_n = int(input("请输入并发数: "))
@@ -187,7 +228,7 @@ if __name__ == '__main__':
     # db_user = 'SYSDBA'
     # db_pwd = 'SYSDBA'
     # db_name = 'SYSTEM'
-    db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    db_host, db_port, db_user, db_pwd, db_name, path = parse_args()
     db_config = {
         'db_host': db_host,
         'db_port': db_port,
@@ -195,12 +236,12 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    table = 'test_lob3'
+    table = input('请输入表名(默认 test_blob )：') or 'test_blob'
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
 
     rebuild_table(table, db_config)
-    once_proc(table, db_config)
+    once_proc(table, path, db_config)
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg

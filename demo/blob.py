@@ -103,7 +103,7 @@ def get_cur(db_config):
 def rebuild_table(table, db_config):
     cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
-    sql2 = f"create table {table}(id int,  name blob)"
+    sql2 = f"create table {table}(id int,  name blob) hotspot 20 copy number 1"
     cur.execute(sql)
     cur.execute(sql2)
 

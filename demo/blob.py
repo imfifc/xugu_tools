@@ -173,15 +173,16 @@ def insert_many(path, nums, table, db_config):
                   1900, 2000]
     now = datetime.datetime.today()
     rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    first_hour = rounded_hour
     times = []
     for i in range(72):
-        each_hour = rounded_hour + datetime.timedelta(hours=1)
-        times.append(str(each_hour))
+        rounded_hour = rounded_hour + datetime.timedelta(hours=1)
+        times.append(str(rounded_hour))
     rows = []
     for i in range(nums):
         data = (
         random.randint(70, 140), random.randint(0, 60), blob_buf, random.choice(high_level), random.choice(times),
-        str(rounded_hour))
+        str(first_hour))
         rows.append(data)
     # print(len(rows))
     cur.executemany(sql, tuple(rows))

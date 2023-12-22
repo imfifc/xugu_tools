@@ -4,6 +4,7 @@ import random
 import sys
 import os
 import time
+import datetime
 from multiprocessing import freeze_support
 
 import xgcondb
@@ -163,22 +164,26 @@ def insert_batch(nums, table, db_config):
 
 def insert_many(path, nums, table, db_config):
     cur = get_cur(db_config)
-    sql = f"insert into {table} values(?,?,?,?,sysdate,sysdate,sysdate)"
-    # blob_buf = open("./xg_lob/test_blob.jpg", "rb").read()
+    sql = f"insert into {table} values(?,?,?,?,sysdate,?,?)"
     blob_buf = open(path, "rb").read()
-    # blob_buf = open(path, "rb").read()
-    # print(111,len(blob_buf))
     cur.cleartype()
     cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
                       xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_level = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                   1900, 2000]
+    now = datetime.datetime.today()
+    rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    times = []
+    for i in range(72):
+        each_hour = rounded_hour + datetime.timedelta(hours=1)
+        times.append(str(each_hour))
     rows = []
     for i in range(nums):
-        data = (random.randint(1, 100), random.randint(1, 100), blob_buf, random.choice(high_level))
+        data = (
+        random.randint(70, 140), random.randint(0, 60), blob_buf, random.choice(high_level), random.choice(times),
+        str(rounded_hour))
         rows.append(data)
     # print(len(rows))
-    # print(rows[:1])
     cur.executemany(sql, tuple(rows))
     # print(cur.rowcount)
 

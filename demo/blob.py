@@ -162,31 +162,24 @@ def insert_batch(nums, table, db_config):
     cur.executebatch(sql, (p0, p1))
 
 
-def insert_many(path, nums, table, db_config):
+def insert_many(time, path, table, db_config):
     cur = get_cur(db_config)
     sql = f"insert into {table} values(?,?,?,?,sysdate,?,?)"
     blob_buf = open(path, "rb").read()
     cur.cleartype()
     cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
                       xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
-    high_level = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
-                  1900, 2000]
+    high_levels = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
+                   1900, 2000]
     now = datetime.datetime.today()
     rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
-    first_hour = rounded_hour
-    times = []
-    for i in range(72):
-        rounded_hour = rounded_hour + datetime.timedelta(hours=1)
-        times.append(str(rounded_hour))
     rows = []
-    for i in range(nums):
-        data = (
-        random.randint(70, 140), random.randint(0, 60), blob_buf, random.choice(high_level), random.choice(times),
-        str(first_hour))
-        rows.append(data)
-    # print(len(rows))
+    for x in range(70, 141):
+        for y in range(0, 61):
+            for level in high_levels:
+                data = (x, y, blob_buf, level, time, rounded_hour)
+                rows.append(data)
     cur.executemany(sql, tuple(rows))
-    # print(cur.rowcount)
 
 
 def show(table, db_config):
@@ -197,10 +190,17 @@ def show(table, db_config):
     print(f'{table} : {row}')
 
 
-def multi_process(n, path, nums, table, db_config):
+def multi_process(path, table, db_config):
+    now = datetime.datetime.today()
+    rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    times = []
+    for i in range(72):
+        rounded_hour = rounded_hour + datetime.timedelta(hours=1)
+        times.append(str(rounded_hour))
+
     processes = []
-    for i in range(n):
-        process = multiprocessing.Process(target=insert_many, args=(path, nums, table, db_config))
+    for time_n in times:
+        process = multiprocessing.Process(target=insert_many, args=(time_n, path, table, db_config))
         processes.append(process)
     for process in processes:
         process.start()
@@ -218,13 +218,13 @@ def once_proc(table, path, db_config):
     path2 = os.path.isfile(path)
     print(f"文件是否存在: {path2}")
     if path2:
-        nums = int(input("请输入表行数: "))
-        parallel_n = int(input("请输入并发数: "))
+        # nums = int(input("请输入表行数: "))
+        # parallel_n = int(input("请输入并发数: "))
         start = time.time()
-        multi_process(parallel_n, path, nums, table, db_config)
+        multi_process(path, table, db_config)
         end = time.time() - start
         show(table, db_config)
-        print(f'耗时{end:.2f}秒', f'tps:{(nums * parallel_n / end):.2f} 行/s')
+        print(f'耗时{end:.2f}秒')
 
 
 if __name__ == '__main__':

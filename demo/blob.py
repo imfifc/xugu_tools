@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import multiprocessing
 import random
 import sys
@@ -115,6 +116,7 @@ def rebuild_table(table, db_config):
     CREATE TABLE {table} (
         X_ZHOU SMALLINT COMMENT 'X轴',
         Y_ZHOU SMALLINT COMMENT 'Y轴',
+        XY SMALLINT COMMENT 'XY',
         val_data binary COMMENT '数值',
         high_level SMALLINT COMMENT '高度',
         val_time TIMESTAMP  COMMENT '资料时间',
@@ -164,7 +166,7 @@ def insert_batch(nums, table, db_config):
 
 def insert_many(time, path, table, db_config):
     cur = get_cur(db_config)
-    sql = f"insert into {table} values(?,?,?,?,sysdate,?,?)"
+    sql = f"insert into {table} values(?,?,?,?,?,sysdate,?,?)"
     blob_buf = open(path, "rb").read()
     cur.cleartype()
     cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
@@ -174,12 +176,16 @@ def insert_many(time, path, table, db_config):
     now = datetime.datetime.today()
     rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
     rows = []
-    for x in range(70, 141):
-        for y in range(0, 61):
+    for x in range(70, 140):
+        for y in range(1, 61):
             for level in high_levels:
-                data = (x, y, blob_buf, level, time, rounded_hour)
+                data = (x, y, (61 - y) * 60 + x, blob_buf, level, time, rounded_hour)
                 rows.append(data)
     cur.executemany(sql, tuple(rows))
+    # batch_size = 100  # 根据需要调整批量大小
+    # chunks = [rows[i:i + batch_size] for i in range(0, len(rows), batch_size)]
+    # with concurrent.futures.ThreadPoolExecutor() as executor:
+    #     executor.submit(cur.executemany, [sql] * len(chunks), chunks)
 
 
 def show(table, db_config):

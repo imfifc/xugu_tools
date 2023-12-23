@@ -2,13 +2,19 @@ import argparse
 import concurrent.futures
 import multiprocessing
 import random
+import re
 import sys
 import os
 import time
-import datetime
+from datetime import datetime, timedelta
 from multiprocessing import freeze_support
 
 import xgcondb
+
+"""
+雷达数据 
+数值预报
+"""
 
 
 # 连接字符串请视情况而定，输入自己本地的数据库服务器IP地址、端口等
@@ -110,6 +116,7 @@ def get_cur(db_config):
 
 
 def rebuild_table(table, db_config):
+    """"binary 最大只能装64k"""
     cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
     sql2 = f""" 
@@ -148,6 +155,54 @@ def rebuild_table(table, db_config):
     cur.execute(sql2)
 
 
+def rebuild_radr_tab(table, db_config):
+    cur = get_cur(db_config)
+    sql = f"drop table if exists {table} cascade"
+    sql2 = f"""
+    CREATE TABLE {table} (
+        AREA VARCHAR COMMENT '国家/区域',
+        FILE_NAME VARCHAR COMMENT '文件名',
+        SITE_ID VARCHAR  COMMENT '站点号',
+        REP_TIME TIMESTAMP COMMENT '上报时间',
+        FILE_TIME  TIMESTAMP COMMENT '资料时间',
+        FILE_FMT VARCHAR COMMENT '文件格式',
+        FILE_DATA BLOB COMMENT '流数据文件'
+        )PARTITION BY RANGE(FILE_TIME) PARTITIONS
+        (PART1 VALUES LESS THAN ('2023-12-01 23:59:59'),
+        PART2 VALUES LESS THAN ('2023-12-02 23:59:59'),
+        PART3 VALUES LESS THAN ('2023-12-03 23:59:59'),
+        PART4 VALUES LESS THAN ('2023-12-04 23:59:59'),
+        PART5 VALUES LESS THAN ('2023-12-05 23:59:59'),
+        PART6 VALUES LESS THAN ('2023-12-06 23:59:59'),
+        PART7 VALUES LESS THAN ('2023-12-07 23:59:59'),
+        PART8 VALUES LESS THAN ('2023-12-08 23:59:59'),
+        PART9 VALUES LESS THAN ('2023-12-09 23:59:59'),
+        PART10 VALUES LESS THAN ('2023-12-10 23:59:59'),
+        PART11 VALUES LESS THAN ('2023-12-11 23:59:59'),
+        PART12 VALUES LESS THAN ('2023-12-12 23:59:59'),
+        PART13 VALUES LESS THAN ('2023-12-13 23:59:59'),
+        PART14 VALUES LESS THAN ('2023-12-14 23:59:59'),
+        PART15 VALUES LESS THAN ('2023-12-15 23:59:59'),
+        PART16 VALUES LESS THAN ('2023-12-16 23:59:59'),
+        PART17 VALUES LESS THAN ('2023-12-17 23:59:59'),
+        PART18 VALUES LESS THAN ('2023-12-18 23:59:59'),
+        PART19 VALUES LESS THAN ('2023-12-19 23:59:59'),
+        PART20 VALUES LESS THAN ('2023-12-20 23:59:59'),
+        PART21 VALUES LESS THAN ('2023-12-21 23:59:59'),
+        PART22 VALUES LESS THAN ('2023-12-22 23:59:59'),
+        PART23 VALUES LESS THAN ('2023-12-23 23:59:59'),
+        PART24 VALUES LESS THAN ('2023-12-24 23:59:59'),
+        PART25 VALUES LESS THAN ('2023-12-25 23:59:59'),
+        PART26 VALUES LESS THAN ('2023-12-26 23:59:59'),
+        PART27 VALUES LESS THAN ('2023-12-27 23:59:59'),
+        PART28 VALUES LESS THAN ('2023-12-28 23:59:59'),
+        PART29 VALUES LESS THAN ('2023-12-29 23:59:59'),
+        PART30 VALUES LESS THAN ('2023-12-30 23:59:59')) hotspot 20 copy number 1 COMMENT '雷达Z9745站点表'  ;
+    """
+    cur.execute(sql)
+    cur.execute(sql2)
+
+
 def insert_batch(nums, table, db_config):
     cur = get_cur(db_config)
     sql = f"insert into {table} values(?,?)"
@@ -173,7 +228,7 @@ def insert_many(time, path, table, db_config):
                       xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_levels = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                    1900, 2000]
-    now = datetime.datetime.today()
+    now = datetime.today()
     rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
     rows = []
     for x in range(70, 140):
@@ -188,6 +243,29 @@ def insert_many(time, path, table, db_config):
     #     executor.submit(cur.executemany, [sql] * len(chunks), chunks)
 
 
+def insert_many_radr(day, path, table, db_config):
+    cur = get_cur(db_config)
+    sql = f"insert into {table} values(?,?,?,sysdate,?,?,?)"
+    file_name = os.path.basename(path)
+    blob_buf = open(path, "rb").read()
+    cur.cleartype()
+    cur.setinputtype((xgcondb.XG_C_CHAR, xgcondb.XG_C_CHAR, xgcondb.XG_C_CHAR, xgcondb.XG_C_DATETIME,
+                      xgcondb.XG_C_DATETIME, xgcondb.XG_C_CHAR, xgcondb.XG_C_BLOB))
+    day = datetime.strptime(day, '%Y-%m-%d %H:%M:%S')
+    print(day, type(day))
+    min_datas = [str(day + timedelta(minutes=j * 6)) for j in range(240)]  # 240个6分钟，即24小时
+    # print(time_datas)
+    tab = table.split('_')
+    site = tab[1] if len(tab) == 2 else table
+    rows = []
+    for i in min_datas:
+        min_str = datetime.strptime(i, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M%S')
+        updated_file_name = re.sub(r'\d{5,}', min_str, file_name)
+        data = ('Z', updated_file_name, site, i, 'bin.bz2', blob_buf)
+        rows.append(data)
+    cur.executemany(sql, tuple(rows))
+
+
 def show(table, db_config):
     cur = get_cur(db_config)
     sql = f'select count(*) from {table}'
@@ -197,11 +275,11 @@ def show(table, db_config):
 
 
 def multi_process(path, table, db_config):
-    now = datetime.datetime.today()
+    now = datetime.today()
     rounded_hour = now.replace(hour=8, minute=0, second=0, microsecond=0)
     times = []
     for i in range(72):
-        rounded_hour = rounded_hour + datetime.timedelta(hours=1)
+        rounded_hour = rounded_hour + timedelta(hours=1)
         times.append(str(rounded_hour))
 
     processes = []
@@ -215,12 +293,23 @@ def multi_process(path, table, db_config):
         process.join()
 
 
+def multi_process_radr(path, table, db_config):
+    now = datetime.today()
+    rounded_hour = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    days_30 = [str(rounded_hour + timedelta(days=i)) for i in range(30)]
+
+    processes = []
+    for day in days_30:
+        process = multiprocessing.Process(target=insert_many_radr, args=(day, path, table, db_config))
+        processes.append(process)
+    for process in processes:
+        process.start()
+    # 等待所有进程完成
+    for process in processes:
+        process.join()
+
+
 def once_proc(table, path, db_config):
-    # path = input('请输入blob文件路径：')
-    # print(filepath)
-    # # file_path = r'C:\path\to\your\file.txt'
-    # ff = f"r'{filepath}'"
-    # print(ff)
     path2 = os.path.isfile(path)
     print(f"文件是否存在: {path2}")
     if path2:
@@ -228,6 +317,19 @@ def once_proc(table, path, db_config):
         # parallel_n = int(input("请输入并发数: "))
         start = time.time()
         multi_process(path, table, db_config)
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒')
+
+
+def once_proc_radr(table, path, db_config):
+    path2 = os.path.isfile(path)
+    print(f"文件是否存在: {path2}")
+    if path2:
+        # nums = int(input("请输入表行数: "))
+        # parallel_n = int(input("请输入并发数: "))
+        start = time.time()
+        multi_process_radr(path, table, db_config)
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')
@@ -254,7 +356,9 @@ if __name__ == '__main__':
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
 
-    rebuild_table(table, db_config)
-    once_proc(table, path, db_config)
+    # rebuild_table(table, db_config)
+    # once_proc(table, path, db_config)
+    rebuild_radr_tab(table, db_config)
+    once_proc_radr(table, path, db_config)
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg

@@ -123,7 +123,7 @@ def rebuild_table(table, db_config):
     CREATE TABLE {table} (
         X_ZHOU SMALLINT COMMENT 'X轴',
         Y_ZHOU SMALLINT COMMENT 'Y轴',
-        XY SMALLINT COMMENT 'XY',
+        XY varchar COMMENT 'XY',
         val_data binary COMMENT '数值',
         high_level SMALLINT COMMENT '高度',
         val_time TIMESTAMP  COMMENT '资料时间',
@@ -224,8 +224,9 @@ def insert_many(time, path, table, db_config):
     sql = f"insert into {table} values(?,?,?,?,?,sysdate,?,?)"
     blob_buf = open(path, "rb").read()
     cur.cleartype()
-    cur.setinputtype((xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
-                      xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
+    cur.setinputtype(
+        (xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_CHAR, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
+         xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_levels = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                    1900, 2000]
     now = datetime.today()
@@ -234,7 +235,7 @@ def insert_many(time, path, table, db_config):
     for x in range(70, 140):
         for y in range(1, 61):
             for level in high_levels:
-                data = (x, y, (61 - y) * 60 + x, blob_buf, level, time, rounded_hour)
+                data = (x, y, f'{x}_{y}', blob_buf, level, time, rounded_hour)
                 rows.append(data)
     cur.executemany(sql, tuple(rows))
     # batch_size = 100  # 根据需要调整批量大小
@@ -351,14 +352,17 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
+    select = input('请选择生成雷达数据1，还是数值预报2，默认2: ') or 2
     table = input('请输入表名(默认 test_blob )：') or 'test_blob'
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
 
-    # rebuild_table(table, db_config)
-    # once_proc(table, path, db_config)
-    rebuild_radr_tab(table, db_config)
-    once_proc_radr(table, path, db_config)
+    if int(select) == 2:
+        rebuild_table(table, db_config)
+        once_proc(table, path, db_config)
+    else:
+        rebuild_radr_tab(table, db_config)
+        once_proc_radr(table, path, db_config)
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg

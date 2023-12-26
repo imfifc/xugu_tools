@@ -124,7 +124,7 @@ def rebuild_table(table, db_config):
         X_ZHOU SMALLINT COMMENT 'X轴',
         Y_ZHOU SMALLINT COMMENT 'Y轴',
         XY varchar COMMENT 'XY',
-        val_data binary COMMENT '数值',
+        val_data blob COMMENT '数值',
         high_level SMALLINT COMMENT '高度',
         val_time TIMESTAMP  COMMENT '资料时间',
         validtime TIMESTAMP COMMENT '预报时效',
@@ -151,7 +151,10 @@ def rebuild_table(table, db_config):
         PART19 values(1800),
         PART20 values(1900),
         PART21 values(2000)) hotspot 20 copy number 1 COMMENT '比湿数值预报表' """
-    cur.execute(sql)
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        print(e)
     cur.execute(sql2)
 
 
@@ -199,7 +202,10 @@ def rebuild_radr_tab(table, db_config):
         PART29 VALUES LESS THAN ('2023-12-29 23:59:59'),
         PART30 VALUES LESS THAN ('2023-12-30 23:59:59')) hotspot 20 copy number 1 COMMENT '雷达Z9745站点表'  ;
     """
-    cur.execute(sql)
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        print(e)
     cur.execute(sql2)
 
 
@@ -225,7 +231,7 @@ def insert_many(time, path, table, db_config):
     blob_buf = open(path, "rb").read()
     cur.cleartype()
     cur.setinputtype(
-        (xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_CHAR, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
+        (xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_CHAR, xgcondb.XG_C_BLOB, xgcondb.XG_C_SHORT,
          xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_levels = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                    1900, 2000]

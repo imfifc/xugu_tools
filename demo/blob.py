@@ -6,6 +6,7 @@ import re
 import sys
 import os
 import time
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime, timedelta
 from multiprocessing import freeze_support
 
@@ -316,6 +317,18 @@ def multi_process_radr(path, table, db_config):
         process.join()
 
 
+def multi_process_radr2(num_processes, path, table, db_config):
+    """仅用于linux"""
+    now = datetime.today()
+    rounded_hour = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    days_30 = [str(rounded_hour + timedelta(days=i)) for i in range(30)]
+
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        futures = [executor.submit(insert_many_radr, day, path, table, db_config) for day in days_30]
+        for future in futures:
+            future.result()
+
+
 def once_proc(table, path, db_config):
     path2 = os.path.isfile(path)
     print(f"文件是否存在: {path2}")
@@ -334,9 +347,9 @@ def once_proc_radr(table, path, db_config):
     print(f"文件是否存在: {path2}")
     if path2:
         # nums = int(input("请输入表行数: "))
-        # parallel_n = int(input("请输入并发数: "))
+        parallel_n = int(input("请输入并发数: "))
         start = time.time()
-        multi_process_radr(path, table, db_config)
+        multi_process_radr2(parallel_n, path, table, db_config)
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')

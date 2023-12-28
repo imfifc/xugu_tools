@@ -124,7 +124,7 @@ def rebuild_table(table, db_config):
     CREATE TABLE {table} (
         X_ZHOU SMALLINT COMMENT 'X轴',
         Y_ZHOU SMALLINT COMMENT 'Y轴',
-        XY varchar COMMENT 'XY',
+        XY SMALLINT COMMENT 'XY',
         val_data blob COMMENT '数值',
         high_level SMALLINT COMMENT '高度',
         val_time TIMESTAMP  COMMENT '资料时间',
@@ -201,7 +201,7 @@ def rebuild_radr_tab(table, db_config):
         PART27 VALUES LESS THAN ('2023-12-27 23:59:59'),
         PART28 VALUES LESS THAN ('2023-12-28 23:59:59'),
         PART29 VALUES LESS THAN ('2023-12-29 23:59:59'),
-        PART30 VALUES LESS THAN ('2023-12-30 23:59:59')) hotspot 20 copy number 1 COMMENT '雷达Z9745站点表'  ;
+        PART30 VALUES LESS THAN ('2023-12-30 23:59:59')) hotspot 20 copy number 2 COMMENT '雷达Z9745站点表'  ;
     """
     try:
         cur.execute(sql)
@@ -232,7 +232,7 @@ def insert_many(time, path, table, db_config):
     blob_buf = open(path, "rb").read()
     cur.cleartype()
     cur.setinputtype(
-        (xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_CHAR, xgcondb.XG_C_BLOB, xgcondb.XG_C_SHORT,
+        (xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_SHORT, xgcondb.XG_C_BINARY, xgcondb.XG_C_SHORT,
          xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME, xgcondb.XG_C_DATETIME))
     high_levels = [1, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800,
                    1900, 2000]
@@ -242,7 +242,7 @@ def insert_many(time, path, table, db_config):
     for x in range(70, 140):
         for y in range(1, 61):
             for level in high_levels:
-                data = (x, y, f'{x}_{y}', blob_buf, level, time, rounded_hour)
+                data = (x, y, (61 - y) * 60 + x, blob_buf, level, time, rounded_hour)
                 rows.append(data)
     cur.executemany(sql, tuple(rows))
     # batch_size = 100  # 根据需要调整批量大小

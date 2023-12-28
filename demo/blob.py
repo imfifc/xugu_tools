@@ -6,7 +6,7 @@ import re
 import sys
 import os
 import time
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from datetime import datetime, timedelta
 from multiprocessing import freeze_support
 
@@ -355,6 +355,30 @@ def once_proc_radr(table, path, db_config):
         print(f'耗时{end:.2f}秒')
 
 
+def once_proc_radars(tables, paths, db_config):
+    """用于多张表一起跑完"""
+    paths = [i for i in paths.split(' ') if i.strip() and os.path.isfile(i.strip())]
+    # print(paths)
+    if len(tables) == len(paths):
+        parallel_n = int(input("请输入并发数: "))
+        run_type = input("请选择for跑完1 还是 并发跑完2,默认1: ") or 2
+        start = time.time()
+        if int(run_type) == 1:
+            for i in range(len(tables)):
+                path, table = paths[i], tables[i]
+                multi_process_radr2(parallel_n, path, table, db_config)
+        else:
+            params = []
+            for i in range(len(tables)):
+                data = (parallel_n, paths[i], tables[i], db_config)
+                params.append(data)
+            # multi_process_radr2(parallel_n, path, table, db_config)
+            with ThreadPoolExecutor(max_workers=len(tables)) as executor:
+                results = list(executor.map(lambda args: multi_process_radr2(*args), params))
+        end = time.time() - start
+        print(f'耗时{end:.2f}秒')
+
+
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
@@ -371,17 +395,31 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，还是数值预报2，默认2: ') or 2
-    table = input('请输入表名(默认 test_blob )：') or 'test_blob'
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，默认2: ') or 2
+
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
     cur.execute('set max_trans_modify to 0')
 
-    if int(select) == 2:
-        rebuild_table(table, db_config)
-        once_proc(table, path, db_config)
-    else:
+    if int(select) == 1:
+        table = input('请输入表名(默认 test_blob )：') or 'test_blob'
         rebuild_radr_tab(table, db_config)
         once_proc_radr(table, path, db_config)
+    elif int(select) == 2:
+        table = input('请输入表名(默认 test_blob )：') or 'test_blob'
+        rebuild_table(table, db_config)
+        once_proc(table, path, db_config)
+    elif int(select) == 3:
+        data = input('请输入多个表名，用空格分开: ')
+        tables = [i for i in data.split(' ') if i.strip()]
+        for table in tables:
+            rebuild_radr_tab(table, db_config)
+        print(tables)
+        once_proc_radars(tables, path, db_config)
+        # 显示表行数
+        for table in tables:
+            show(table, db_config)
+
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg
 # D:\llearn\xugu\demo\xg_lob\test_blob.jpg
+# python blob.py -H 10.28.20.101 -P 5136 -uSYSDBA -p SYSDBA -d SYSTEM -f "D:\llearn\xugu\demo\xg_lob\22k.jpg ,D:\llearn\xugu\demo\xg_lob\52k.jpg"

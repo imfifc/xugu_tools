@@ -618,7 +618,7 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，数值100预报4，默认2: ') or 2
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，数值100预报4，数值预报100但要素5，默认2: ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
@@ -636,6 +636,14 @@ if __name__ == '__main__':
         table = input('请输入表名(默认 test_blob )：') or 'test_blob'
         rebuild_table2(table, db_config)
         once_proc3(table, path, db_config)
+    elif int(select) == 5:
+        table = input('请输入表名(默认 test_blob )：') or 'test_blob'
+        rebuild_table2(table, db_config)
+        start = time.time()
+        insert_many3('WIND', path, table, db_config)
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒')
     elif int(select) == 3:
         data = input('请输入多个表名，用空格分开: ')
         tables = [i for i in data.split(' ') if i.strip()]

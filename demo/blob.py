@@ -3,6 +3,7 @@ import concurrent.futures
 import multiprocessing
 import random
 import re
+import numpy as np
 import sys
 import os
 import time
@@ -159,6 +160,185 @@ def rebuild_table(table, db_config):
     cur.execute(sql2)
 
 
+def rebuild_table2(table, db_config):
+    """数值预报2，7个要素"""
+    cur = get_cur(db_config)
+    sql = f"drop table if exists {table} cascade"
+    sql2 = f"""
+    create table {table} (
+        val_time TIMESTAMP  COMMENT '资料时间',
+        lat_lon INT COMMENT '维度', 	
+        ele_type VARCHAR COMMENT '要素类型', 
+        lon_00 binary COMMENT '偏移00要素值', 
+        lon_01 binary COMMENT '偏移01要素值',
+        lon_02 binary COMMENT '偏移02要素值',
+        lon_03 binary COMMENT '偏移03要素值',
+        lon_04 binary COMMENT '偏移04要素值',
+        lon_05 binary COMMENT '偏移05要素值',
+        lon_06 binary COMMENT '偏移06要素值',
+        lon_07 binary COMMENT '偏移07要素值',
+        lon_08 binary COMMENT '偏移08要素值',
+        lon_09 binary COMMENT '偏移09要素值',
+        lon_10 binary COMMENT '偏移10要素值',
+        lon_11 binary COMMENT '偏移11要素值',
+        lon_12 binary COMMENT '偏移12要素值',
+        lon_13 binary COMMENT '偏移13要素值',
+        lon_14 binary COMMENT '偏移14要素值',
+        lon_15 binary COMMENT '偏移15要素值',
+        lon_16 binary COMMENT '偏移16要素值',
+        lon_17 binary COMMENT '偏移17要素值',
+        lon_18 binary COMMENT '偏移18要素值',
+        lon_19 binary COMMENT '偏移19要素值',
+        lon_20 binary COMMENT '偏移20要素值',
+        lon_21 binary COMMENT '偏移21要素值',
+        lon_22 binary COMMENT '偏移22要素值',
+        lon_23 binary COMMENT '偏移23要素值',
+        lon_24 binary COMMENT '偏移24要素值',
+        lon_25 binary COMMENT '偏移25要素值',
+        lon_26 binary COMMENT '偏移26要素值',
+        lon_27 binary COMMENT '偏移27要素值',
+        lon_28 binary COMMENT '偏移28要素值',
+        lon_29 binary COMMENT '偏移29要素值',
+        lon_30 binary COMMENT '偏移30要素值',
+        lon_31 binary COMMENT '偏移31要素值',
+        lon_32 binary COMMENT '偏移32要素值',
+        lon_33 binary COMMENT '偏移33要素值',
+        lon_34 binary COMMENT '偏移34要素值',
+        lon_35 binary COMMENT '偏移35要素值',
+        lon_36 binary COMMENT '偏移36要素值',
+        lon_37 binary COMMENT '偏移37要素值',
+        lon_38 binary COMMENT '偏移38要素值',
+        lon_39 binary COMMENT '偏移39要素值',
+        lon_40 binary COMMENT '偏移40要素值',
+        lon_41 binary COMMENT '偏移41要素值',
+        lon_42 binary COMMENT '偏移42要素值',
+        lon_43 binary COMMENT '偏移43要素值',
+        lon_44 binary COMMENT '偏移44要素值',
+        lon_45 binary COMMENT '偏移45要素值',
+        lon_46 binary COMMENT '偏移46要素值',
+        lon_47 binary COMMENT '偏移47要素值',
+        lon_48 binary COMMENT '偏移48要素值',
+        lon_49 binary COMMENT '偏移49要素值',
+        lon_50 binary COMMENT '偏移50要素值',
+        lon_51 binary COMMENT '偏移51要素值',
+        lon_52 binary COMMENT '偏移52要素值',
+        lon_53 binary COMMENT '偏移53要素值',
+        lon_54 binary COMMENT '偏移54要素值',
+        lon_55 binary COMMENT '偏移55要素值',
+        lon_56 binary COMMENT '偏移56要素值',
+        lon_57 binary COMMENT '偏移57要素值',
+        lon_58 binary COMMENT '偏移58要素值',
+        lon_59 binary COMMENT '偏移59要素值',
+        lon_60 binary COMMENT '偏移60要素值',
+        lon_61 binary COMMENT '偏移61要素值',
+        lon_62 binary COMMENT '偏移62要素值',
+        lon_63 binary COMMENT '偏移63要素值',
+        lon_64 binary COMMENT '偏移64要素值',
+        lon_65 binary COMMENT '偏移65要素值',
+        lon_66 binary COMMENT '偏移66要素值',
+        lon_67 binary COMMENT '偏移67要素值',
+        lon_68 binary COMMENT '偏移68要素值',
+        lon_69 binary COMMENT '偏移69要素值',
+        lon_70 binary COMMENT '偏移70要素值',
+        lon_71 binary COMMENT '偏移71要素值',
+        lon_72 binary COMMENT '偏移72要素值',
+        lon_73 binary COMMENT '偏移73要素值',
+        lon_74 binary COMMENT '偏移74要素值',
+        lon_75 binary COMMENT '偏移75要素值',
+        lon_76 binary COMMENT '偏移76要素值',
+        lon_77 binary COMMENT '偏移77要素值',
+        lon_78 binary COMMENT '偏移78要素值',
+        lon_79 binary COMMENT '偏移79要素值',
+        lon_80 binary COMMENT '偏移80要素值',
+        lon_81 binary COMMENT '偏移81要素值',
+        lon_82 binary COMMENT '偏移82要素值',
+        lon_83 binary COMMENT '偏移83要素值',
+        lon_84 binary COMMENT '偏移84要素值',
+        lon_85 binary COMMENT '偏移85要素值',
+        lon_86 binary COMMENT '偏移86要素值',
+        lon_87 binary COMMENT '偏移87要素值',
+        lon_88 binary COMMENT '偏移88要素值',
+        lon_89 binary COMMENT '偏移89要素值',
+        lon_90 binary COMMENT '偏移90要素值',
+        lon_91 binary COMMENT '偏移91要素值',
+        lon_92 binary COMMENT '偏移92要素值',
+        lon_93 binary COMMENT '偏移93要素值',
+        lon_94 binary COMMENT '偏移94要素值',
+        lon_95 binary COMMENT '偏移95要素值',
+        lon_96 binary COMMENT '偏移96要素值',
+        lon_97 binary COMMENT '偏移97要素值',
+        lon_98 binary COMMENT '偏移98要素值',
+        lon_99 binary COMMENT '偏移99要素值')
+        PARTITION BY RANGE(lat_lon) PARTITIONS
+        (PART1 VALUES LESS THAN (100141),
+        PART2 VALUES LESS THAN (200141),
+        PART3 VALUES LESS THAN (300141),
+        PART4 VALUES LESS THAN (400141),
+        PART5 VALUES LESS THAN (500141),
+        PART6 VALUES LESS THAN (600141),
+        PART7 VALUES LESS THAN (700141),
+        PART8 VALUES LESS THAN (800141),
+        PART9 VALUES LESS THAN (900141),
+        PART10 VALUES LESS THAN (1000141),
+        PART11 VALUES LESS THAN (1100141),
+        PART12 VALUES LESS THAN (1200141),
+        PART13 VALUES LESS THAN (1300141),
+        PART14 VALUES LESS THAN (1400141),
+        PART15 VALUES LESS THAN (1500141),
+        PART16 VALUES LESS THAN (1600141),
+        PART17 VALUES LESS THAN (1700141),
+        PART18 VALUES LESS THAN (1800141),
+        PART19 VALUES LESS THAN (1900141),
+        PART20 VALUES LESS THAN (2000141),
+        PART21 VALUES LESS THAN (2100141),
+        PART22 VALUES LESS THAN (2200141),
+        PART23 VALUES LESS THAN (2300141),
+        PART24 VALUES LESS THAN (2400141),
+        PART25 VALUES LESS THAN (2500141),
+        PART26 VALUES LESS THAN (2600141),
+        PART27 VALUES LESS THAN (2700141),
+        PART28 VALUES LESS THAN (2800141),
+        PART29 VALUES LESS THAN (2900141),
+        PART30 VALUES LESS THAN (3000141),
+        PART31 VALUES LESS THAN (3100141),
+        PART32 VALUES LESS THAN (3200141),
+        PART33 VALUES LESS THAN (3300141),
+        PART34 VALUES LESS THAN (3400141),
+        PART35 VALUES LESS THAN (3500141),
+        PART36 VALUES LESS THAN (3600141),
+        PART37 VALUES LESS THAN (3700141),
+        PART38 VALUES LESS THAN (3800141),
+        PART39 VALUES LESS THAN (3900141),
+        PART40 VALUES LESS THAN (4000141),
+        PART41 VALUES LESS THAN (4100141),
+        PART42 VALUES LESS THAN (4200141),
+        PART43 VALUES LESS THAN (4300141),
+        PART44 VALUES LESS THAN (4400141),
+        PART45 VALUES LESS THAN (4500141),
+        PART46 VALUES LESS THAN (4600141),
+        PART47 VALUES LESS THAN (4700141),
+        PART48 VALUES LESS THAN (4800141),
+        PART49 VALUES LESS THAN (4900141),
+        PART50 VALUES LESS THAN (5000141),
+        PART51 VALUES LESS THAN (5100141),
+        PART52 VALUES LESS THAN (5200141),
+        PART53 VALUES LESS THAN (5300141),
+        PART54 VALUES LESS THAN (5400141),
+        PART55 VALUES LESS THAN (5500141),
+        PART56 VALUES LESS THAN (5600141),
+        PART57 VALUES LESS THAN (5700141),
+        PART58 VALUES LESS THAN (5800141),
+        PART59 VALUES LESS THAN (5900141),
+        PART60 VALUES LESS THAN (6000141)
+        ) hotspot 20 copy number 1;
+    """
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        print(e)
+    cur.execute(sql2)
+
+
 def rebuild_radr_tab(table, db_config):
     cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
@@ -251,6 +431,22 @@ def insert_many(time, path, table, db_config):
     #     executor.submit(cur.executemany, [sql] * len(chunks), chunks)
 
 
+def insert_many3(ele, path, table, db_config):
+    """数值预报2,7个元素"""
+    cur = get_cur(db_config)
+    sql = f"insert into {table} values(sysdate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    blob_buf = open(path, "rb").read()
+    cur.cleartype()
+    rows = []
+    for i in np.arange(0.01, 60.01, 0.01):
+        for j in range(71, 141):
+            num = 100000 * round(i, 2) + j
+            data = (int(num), ele,) + (blob_buf,) * 100
+            rows.append(data)
+    print(len(rows))
+    cur.executemany(sql, tuple(rows))
+
+
 def insert_many_radr(day, path, table, db_config):
     cur = get_cur(db_config)
     sql = f"insert into {table} values(?,?,?,sysdate,?,?,?)"
@@ -280,6 +476,20 @@ def show(table, db_config):
     data = cur.execute(sql)
     row = cur.fetchone()
     print(f'{table} : {row}')
+
+
+def multi_process3(path, table, db_config):
+    """7个要素，第3张表"""
+    elements = ['TAIR', 'UWIN', 'VWIN', 'WIND', 'GUST', 'RHU', 'SHU']
+    processes = []
+    for ele in elements:
+        process = multiprocessing.Process(target=insert_many3, args=(ele, path, table, db_config))
+        processes.append(process)
+    for process in processes:
+        process.start()
+    # 等待所有进程完成
+    for process in processes:
+        process.join()
 
 
 def multi_process(path, table, db_config):
@@ -342,6 +552,19 @@ def once_proc(table, path, db_config):
         print(f'耗时{end:.2f}秒')
 
 
+def once_proc3(table, path, db_config):
+    path2 = os.path.isfile(path)
+    print(f"文件是否存在: {path2}")
+    if path2:
+        # nums = int(input("请输入表行数: "))
+        # parallel_n = int(input("请输入并发数: "))
+        start = time.time()
+        multi_process3(path, table, db_config)
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒')
+
+
 def once_proc_radr(table, path, db_config):
     path2 = os.path.isfile(path)
     print(f"文件是否存在: {path2}")
@@ -395,7 +618,7 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，默认2: ') or 2
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，数值100预报4，默认2: ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
@@ -409,6 +632,10 @@ if __name__ == '__main__':
         table = input('请输入表名(默认 test_blob )：') or 'test_blob'
         rebuild_table(table, db_config)
         once_proc(table, path, db_config)
+    elif int(select) == 4:
+        table = input('请输入表名(默认 test_blob )：') or 'test_blob'
+        rebuild_table2(table, db_config)
+        once_proc3(table, path, db_config)
     elif int(select) == 3:
         data = input('请输入多个表名，用空格分开: ')
         tables = [i for i in data.split(' ') if i.strip()]

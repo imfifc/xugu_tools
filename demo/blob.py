@@ -431,14 +431,29 @@ def insert_many(time, path, table, db_config):
     #     executor.submit(cur.executemany, [sql] * len(chunks), chunks)
 
 
-def insert_many3(ele, path, table, db_config):
+def multi_gps(path, table, db_config):
+    start_value = 0.01
+    end_value = 60.01
+    num_intervals = 20
+    interval_width = (end_value - start_value) / num_intervals
+    interval_boundaries = [(start_value + i * interval_width, start_value + (i + 1) * interval_width) for i in
+                           range(num_intervals)]
+
+    with ProcessPoolExecutor(max_workers=20) as executor:
+        futures = [executor.submit(insert_many3, x, y, 'WIND', path, table, db_config) for (x, y) in
+                   interval_boundaries]
+        for future in futures:
+            future.result()
+
+
+def insert_many3(x, y, ele, path, table, db_config):
     """数值预报2,7个元素"""
     cur = get_cur(db_config)
     sql = f"insert into {table} values(sysdate,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
     blob_buf = open(path, "rb").read()
     cur.cleartype()
     rows = []
-    for i in np.arange(0.01, 60.01, 0.01):
+    for i in np.arange(x, y, 0.01):
         for j in range(71, 141):
             num = 100000 * round(i, 2) + j
             data = (int(num), ele,) + (blob_buf,) * 100
@@ -640,7 +655,8 @@ if __name__ == '__main__':
         table = input('请输入表名(默认 test_blob )：') or 'test_blob'
         rebuild_table2(table, db_config)
         start = time.time()
-        insert_many3('WIND', path, table, db_config)
+        # insert_many3('WIND', path, table, db_config) # 单线程
+        multi_gps(path, table, db_config)  # 20 个多线程
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')

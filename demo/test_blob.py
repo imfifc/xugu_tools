@@ -27,7 +27,7 @@ if row[0] == 1:
     cur.execute("drop table test_lob;")
 cur.execute("create table test_lob(col1 int,  col2 blob);")
 
-blob_buf = open("./xg_lob/test_blob.jpg", "rb").read()
+blob_buf = open("/root/22k.jpg", "rb").read()
 print(len(blob_buf))
 cur.cleartype()
 cur.setinputtype((xgcondb.XG_C_INTEGER, xgcondb.XG_C_BLOB))

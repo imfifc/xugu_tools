@@ -390,6 +390,72 @@ def rebuild_radr_tab(table, db_config):
     cur.execute(sql2)
 
 
+def rebuild_radr_tab2(table, db_config):
+    """
+    SITE_ID   --6个值 子分区
+    FILE_TIME --6分钟一次  一天240次 30天7200次
+    FILE_DATA BLOB COMMENT '流数据文件'  --文件按站点号对应
+    :param table:
+    :param db_config:
+    :return:
+    """
+    cur = get_cur(db_config)
+    sql = f"drop table if exists {table} cascade"
+    sql2 = f"""
+    CREATE TABLE {table} (
+        AREA VARCHAR COMMENT '国家/区域',
+        FILE_NAME VARCHAR COMMENT '文件名',
+        SITE_ID VARCHAR  COMMENT '站点号',  
+        REP_TIME TIMESTAMP COMMENT '上报时间',
+        FILE_TIME  TIMESTAMP COMMENT '资料时间',
+        FILE_FMT VARCHAR COMMENT '文件格式',
+        FILE_DATA BLOB COMMENT '流数据文件'  
+        )PARTITION BY RANGE(FILE_TIME) PARTITIONS
+        (PART1 VALUES LESS THAN ('2023-12-01 23:59:59'),
+        PART2 VALUES LESS THAN ('2023-12-02 23:59:59'),
+        PART3 VALUES LESS THAN ('2023-12-03 23:59:59'),
+        PART4 VALUES LESS THAN ('2023-12-04 23:59:59'),
+        PART5 VALUES LESS THAN ('2023-12-05 23:59:59'),
+        PART6 VALUES LESS THAN ('2023-12-06 23:59:59'),
+        PART7 VALUES LESS THAN ('2023-12-07 23:59:59'),
+        PART8 VALUES LESS THAN ('2023-12-08 23:59:59'),
+        PART9 VALUES LESS THAN ('2023-12-09 23:59:59'),
+        PART10 VALUES LESS THAN ('2023-12-10 23:59:59'),
+        PART11 VALUES LESS THAN ('2023-12-11 23:59:59'),
+        PART12 VALUES LESS THAN ('2023-12-12 23:59:59'),
+        PART13 VALUES LESS THAN ('2023-12-13 23:59:59'),
+        PART14 VALUES LESS THAN ('2023-12-14 23:59:59'),
+        PART15 VALUES LESS THAN ('2023-12-15 23:59:59'),
+        PART16 VALUES LESS THAN ('2023-12-16 23:59:59'),
+        PART17 VALUES LESS THAN ('2023-12-17 23:59:59'),
+        PART18 VALUES LESS THAN ('2023-12-18 23:59:59'),
+        PART19 VALUES LESS THAN ('2023-12-19 23:59:59'),
+        PART20 VALUES LESS THAN ('2023-12-20 23:59:59'),
+        PART21 VALUES LESS THAN ('2023-12-21 23:59:59'),
+        PART22 VALUES LESS THAN ('2023-12-22 23:59:59'),
+        PART23 VALUES LESS THAN ('2023-12-23 23:59:59'),
+        PART24 VALUES LESS THAN ('2023-12-24 23:59:59'),
+        PART25 VALUES LESS THAN ('2023-12-25 23:59:59'),
+        PART26 VALUES LESS THAN ('2023-12-26 23:59:59'),
+        PART27 VALUES LESS THAN ('2023-12-27 23:59:59'),
+        PART28 VALUES LESS THAN ('2023-12-28 23:59:59'),
+        PART29 VALUES LESS THAN ('2023-12-29 23:59:59'),
+        PART30 VALUES LESS THAN ('2023-12-30 23:59:59'))
+        SUBPARTITION BY LIST(SITE_ID) SUBPARTITIONS(
+        subpart1 VALUES ('Z9513'),
+        subpart2 VALUES ('Z9745'),
+        subpart3 VALUES ('Z9770'),
+        subpart4 VALUES ('Z9797'),
+        subpart5 VALUES ('Z9873'),
+        subpart6 VALUES ('Z9909')) hotspot 20 copy number 2 COMMENT '雷达Z9745站点表'  ;
+    """
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        print(e)
+    cur.execute(sql2)
+
+
 def update_tab2(ele, num, fields, path, table, db_config):
     """
     更新位置服务表
@@ -497,8 +563,9 @@ def insert_many_radr(day, path, table, db_config):
     print(day, type(day))
     min_datas = [str(day + timedelta(minutes=j * 6)) for j in range(240)]  # 240个6分钟，即24小时
     # print(time_datas)
-    tab = table.split('_')
-    site = tab[1] if len(tab) == 2 else table
+    # tab = table.split('_')
+    # site = tab[1] if len(tab) == 2 else table
+    site = file_name.split("_")[3]
     rows = []
     for i in min_datas:
         min_str = datetime.strptime(i, '%Y-%m-%d %H:%M:%S').strftime('%Y%m%d%H%M%S')
@@ -581,7 +648,8 @@ def multi_process_radr(path, table, db_config):
 
 def multi_process_radr2(num_processes, path, table, db_config):
     """仅用于linux"""
-    now = datetime.today()
+    # now = datetime.today() - timedelta(days=20) #
+    now = datetime.strptime("2023-12-30", "%Y-%m-%d")
     rounded_hour = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     days_30 = [str(rounded_hour + timedelta(days=i)) for i in range(30)]
 
@@ -670,7 +738,8 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100预报4，位置服务100但要素5，更新位置服务6，默认2: ') or 2
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100预报4，\n'
+                   '位置服务100但要素5，更新位置服务6，一张表跑雷达7，默认2: ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
@@ -710,6 +779,19 @@ if __name__ == '__main__':
             update_tab2('SHU', int(num), int(fields), path, table, db_config)
         elif int(ele) == 7:
             multi_process4(num, fields, path, table, db_config)  # 7个要素
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒')
+    elif int(select) == 7:
+        #     一张表装6个文件,path="11 22 33"
+        parallel_n = int(input("请输入并发数: "))
+        table = input('请输入表名(默认 test_blob ):') or 'test_blob'
+        paths = [i for i in path.split(' ') if i.strip() and os.path.isfile(i.strip())]
+        print(paths)
+        rebuild_radr_tab2(table, db_config)
+        start = time.time()
+        for path in paths:
+            multi_process_radr2(parallel_n, path, table, db_config)
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')

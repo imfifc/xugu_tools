@@ -161,7 +161,7 @@ def rebuild_table(table, db_config):
 
 
 def rebuild_table2(table, db_config):
-    """数值预报2，7个要素"""
+    """位置服务，7个要素"""
     cur = get_cur(db_config)
     sql = f"drop table if exists {table} cascade"
     sql2 = f"""
@@ -390,6 +390,29 @@ def rebuild_radr_tab(table, db_config):
     cur.execute(sql2)
 
 
+def update_tab2(ele, num, fields, path, table, db_config):
+    """
+    更新位置服务表
+    num: 更新行数
+    :param table:
+    :param db_config:
+    :return:
+    """
+    cur = get_cur(db_config)
+    blob_buf = open(path, "rb").read()
+
+    if fields == 100:
+        sql = f"update {table} set ele_type=?,lon_00=?,lon_01=?,lon_02=?,lon_03=?,lon_04=?,lon_05=?,lon_06=?,lon_07=?,lon_08=?,lon_09=?,lon_10=?,lon_11=?,lon_12=?,lon_13=?,lon_14=?,lon_15=?,lon_16=?,lon_17=?,lon_18=?,lon_19=?,lon_20=?,lon_21=?,lon_22=?,lon_23=?,lon_24=?,lon_25=?,lon_26=?,lon_27=?,lon_28=?,lon_29=?,lon_30=?,lon_31=?,lon_32=?,lon_33=?,lon_34=?,lon_35=?,lon_36=?,lon_37=?,lon_38=?,lon_39=?,lon_40=?,lon_41=?,lon_42=?,lon_43=?,lon_44=?,lon_45=?,lon_46=?,lon_47=?,lon_48=?,lon_49=?,lon_50=?,lon_51=?,lon_52=?,lon_53=?,lon_54=?,lon_55=?,lon_56=?,lon_57=?,lon_58=?,lon_59=?,lon_60=?,lon_61=?,lon_62=?,lon_63=?,lon_64=?,lon_65=?,lon_66=?,lon_67=?,lon_68=?,lon_69=?,lon_70=?,lon_71=?,lon_72=?,lon_73=?,lon_74=?,lon_75=?,lon_76=?,lon_77=?,lon_78=?,lon_79=?,lon_80=?,lon_81=?,lon_82=?,lon_83=?,lon_84=?,lon_85=?,lon_86=?,lon_87=?,lon_88=?,lon_89=?,lon_90=?,lon_91=?,lon_92=?,lon_93=?,lon_94=?,lon_95=?,lon_96=?,lon_97=?,lon_98=?,lon_99=? where rownum<={num} "
+        cur.cleartype()
+        data = (ele,) + (blob_buf,) * 100
+        cur.executemany(sql, tuple(data))
+    elif fields == 1:
+        sql = f"update {table} set ele_type=?,lon_00=?  where rownum<={num}"
+        cur.cleartype()
+        data = (ele, blob_buf)
+        cur.executemany(sql, tuple(data))
+
+
 def insert_batch(nums, table, db_config):
     cur = get_cur(db_config)
     sql = f"insert into {table} values(?,?)"
@@ -498,7 +521,21 @@ def multi_process3(path, table, db_config):
     elements = ['TAIR', 'UWIN', 'VWIN', 'WIND', 'GUST', 'RHU', 'SHU']
     processes = []
     for ele in elements:
-        process = multiprocessing.Process(target=insert_many3, args=(ele, path, table, db_config))
+        process = multiprocessing.Process(target=insert_many3, args=(0.01, 60.01, ele, path, table, db_config))
+        processes.append(process)
+    for process in processes:
+        process.start()
+    # 等待所有进程完成
+    for process in processes:
+        process.join()
+
+
+def multi_process4(num, fields, path, table, db_config):
+    """7个要素，位置服务"""
+    elements = ['TAIR', 'UWIN', 'VWIN', 'WIND', 'GUST', 'RHU', 'SHU']
+    processes = []
+    for ele in elements:
+        process = multiprocessing.Process(target=update_tab2, args=(ele, num, fields, path, table, db_config))
         processes.append(process)
     for process in processes:
         process.start()
@@ -633,7 +670,7 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，数值100预报4，数值预报100但要素5，默认2: ') or 2
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100预报4，位置服务100但要素5，更新位置服务6，默认2: ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
@@ -648,6 +685,7 @@ if __name__ == '__main__':
         rebuild_table(table, db_config)
         once_proc(table, path, db_config)
     elif int(select) == 4:
+        # 位置服务生成
         table = input('请输入表名(默认 test_blob )：') or 'test_blob'
         rebuild_table2(table, db_config)
         once_proc3(table, path, db_config)
@@ -661,6 +699,21 @@ if __name__ == '__main__':
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')
+    elif int(select) == 6:
+        # 位置服务更新
+        table = input('请输入表名(默认 test_blob ):') or 'test_blob'
+        ele = input("请输入需要更新的要素个数: 默认1个要素: ") or 1
+        num = input("请输入更新的行数,默认420 : ") or 420
+        fields = input("请输入需要更新的字段数，默认为1: ") or 1
+        start = time.time()
+        if int(ele) == 1:
+            update_tab2('SHU', int(num), int(fields), path, table, db_config)
+        elif int(ele) == 7:
+            multi_process4(num, fields, path, table, db_config)  # 7个要素
+        end = time.time() - start
+        show(table, db_config)
+        print(f'耗时{end:.2f}秒')
+
     elif int(select) == 3:
         data = input('请输入多个表名，用空格分开: ')
         tables = [i for i in data.split(' ') if i.strip()]

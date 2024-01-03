@@ -738,8 +738,8 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100预报4，\n'
-                   '位置服务100但要素5，更新位置服务6，一张表跑雷达7，默认2: ') or 2
+    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100 7要素4，\n'
+                   '位置服务100 单要素5，更新位置服务6，一张表跑雷达7，默认2: ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')
@@ -776,7 +776,7 @@ if __name__ == '__main__':
         fields = input("请输入需要更新的字段数，默认为1: ") or 1
         start = time.time()
         if int(ele) == 1:
-            update_tab2('SHU', int(num), int(fields), path, table, db_config)
+            update_tab2('dd', int(num), int(fields), path, table, db_config)
         elif int(ele) == 7:
             multi_process4(num, fields, path, table, db_config)  # 7个要素
         end = time.time() - start

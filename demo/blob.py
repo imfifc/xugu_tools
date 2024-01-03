@@ -740,8 +740,15 @@ if __name__ == '__main__':
         'db_pwd': db_pwd,
         'db_name': db_name,
     }
-    select = input('请选择生成雷达数据1，数值预报2，多雷达数据3，位置服务100 7要素4，\n'
-                   '位置服务100 单要素5，更新位置服务6，一张表跑雷达7，默认2: ') or 2
+    select = input('请选择,默认2\n'
+                   '1)生成雷达数据，'
+                   '2)数值预报，'
+                   '3)多张表跑雷达数据，'
+                   '4)位置服务100个binary字段,7要素.'
+                   '5)位置服务100个binary字段,单要素，'
+                   '6)更新位置服务，'
+                   '7)一张表跑多个雷达文件'
+                   ': ') or 2
 
     cur = get_cur(db_config)
     cur.execute('set max_loop_num to 0')

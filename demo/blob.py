@@ -468,14 +468,14 @@ def update_tab2(ele, num, fields, path, table, db_config):
     blob_buf = open(path, "rb").read()
 
     if fields == 100:
-        sql = f"update {table} set ele_type=?,lon_00=?,lon_01=?,lon_02=?,lon_03=?,lon_04=?,lon_05=?,lon_06=?,lon_07=?,lon_08=?,lon_09=?,lon_10=?,lon_11=?,lon_12=?,lon_13=?,lon_14=?,lon_15=?,lon_16=?,lon_17=?,lon_18=?,lon_19=?,lon_20=?,lon_21=?,lon_22=?,lon_23=?,lon_24=?,lon_25=?,lon_26=?,lon_27=?,lon_28=?,lon_29=?,lon_30=?,lon_31=?,lon_32=?,lon_33=?,lon_34=?,lon_35=?,lon_36=?,lon_37=?,lon_38=?,lon_39=?,lon_40=?,lon_41=?,lon_42=?,lon_43=?,lon_44=?,lon_45=?,lon_46=?,lon_47=?,lon_48=?,lon_49=?,lon_50=?,lon_51=?,lon_52=?,lon_53=?,lon_54=?,lon_55=?,lon_56=?,lon_57=?,lon_58=?,lon_59=?,lon_60=?,lon_61=?,lon_62=?,lon_63=?,lon_64=?,lon_65=?,lon_66=?,lon_67=?,lon_68=?,lon_69=?,lon_70=?,lon_71=?,lon_72=?,lon_73=?,lon_74=?,lon_75=?,lon_76=?,lon_77=?,lon_78=?,lon_79=?,lon_80=?,lon_81=?,lon_82=?,lon_83=?,lon_84=?,lon_85=?,lon_86=?,lon_87=?,lon_88=?,lon_89=?,lon_90=?,lon_91=?,lon_92=?,lon_93=?,lon_94=?,lon_95=?,lon_96=?,lon_97=?,lon_98=?,lon_99=? where rownum<={num} "
+        sql = f"update {table} set lon_00=?,lon_01=?,lon_02=?,lon_03=?,lon_04=?,lon_05=?,lon_06=?,lon_07=?,lon_08=?,lon_09=?,lon_10=?,lon_11=?,lon_12=?,lon_13=?,lon_14=?,lon_15=?,lon_16=?,lon_17=?,lon_18=?,lon_19=?,lon_20=?,lon_21=?,lon_22=?,lon_23=?,lon_24=?,lon_25=?,lon_26=?,lon_27=?,lon_28=?,lon_29=?,lon_30=?,lon_31=?,lon_32=?,lon_33=?,lon_34=?,lon_35=?,lon_36=?,lon_37=?,lon_38=?,lon_39=?,lon_40=?,lon_41=?,lon_42=?,lon_43=?,lon_44=?,lon_45=?,lon_46=?,lon_47=?,lon_48=?,lon_49=?,lon_50=?,lon_51=?,lon_52=?,lon_53=?,lon_54=?,lon_55=?,lon_56=?,lon_57=?,lon_58=?,lon_59=?,lon_60=?,lon_61=?,lon_62=?,lon_63=?,lon_64=?,lon_65=?,lon_66=?,lon_67=?,lon_68=?,lon_69=?,lon_70=?,lon_71=?,lon_72=?,lon_73=?,lon_74=?,lon_75=?,lon_76=?,lon_77=?,lon_78=?,lon_79=?,lon_80=?,lon_81=?,lon_82=?,lon_83=?,lon_84=?,lon_85=?,lon_86=?,lon_87=?,lon_88=?,lon_89=?,lon_90=?,lon_91=?,lon_92=?,lon_93=?,lon_94=?,lon_95=?,lon_96=?,lon_97=?,lon_98=?,lon_99=? where ele_type='{ele}' and  rownum<={num} "
         cur.cleartype()
-        data = (ele,) + (blob_buf,) * 100
+        data = (blob_buf,) * 100
         cur.executemany(sql, tuple(data))
     elif fields == 1:
-        sql = f"update {table} set ele_type=?,lon_00=?  where rownum<={num}"
+        sql = f"update {table} set lon_00=?  where ele_type='{ele}' and rownum<={num}"
         cur.cleartype()
-        data = (ele, blob_buf)
+        data = (blob_buf,)
         cur.executemany(sql, tuple(data))
 
 
@@ -776,9 +776,9 @@ if __name__ == '__main__':
         fields = input("请输入需要更新的字段数，默认为1: ") or 1
         start = time.time()
         if int(ele) == 1:
-            update_tab2('dd', int(num), int(fields), path, table, db_config)
-        elif int(ele) == 7:
-            multi_process4(num, fields, path, table, db_config)  # 7个要素
+            update_tab2('SHU', int(num), int(fields), path, table, db_config)
+        else:
+            multi_process4(int(num), int(fields), path, table, db_config)  # 7个要素
         end = time.time() - start
         show(table, db_config)
         print(f'耗时{end:.2f}秒')

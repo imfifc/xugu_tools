@@ -27,19 +27,20 @@ if row[0] == 1:
     cur.execute("drop table test_lob;")
 cur.execute("create table test_lob(col1 int,  col2 blob);")
 
-blob_buf = open("/root/22k.jpg", "rb").read()
+blob_buf = open("/root/Z_RADR_I_Z9513_20231103153041_O_DOR_SAD_CAP_FMT.bin.bz2", "rb").read()
 print(len(blob_buf))
 cur.cleartype()
-cur.setinputtype((xgcondb.XG_C_INTEGER, xgcondb.XG_C_BLOB))
+# cur.setinputtype((xgcondb.XG_C_INTEGER, xgcondb.XG_C_BLOB))
 t1 = []
 t2 = []
 for i in range(10):
     t1.append(i)
     t2.append(blob_buf)
-print(222, len(t2))
 cur.executebatch("insert into test_lob values(?,?);", (t1, t2))
-cur.execute("select count(*) from test_lob")
-row = cur.fetchone()
+print('done')
+cur.cleartype()
+cur.execute("select * from test_lob;")
+row = cur.fetchalll()
 print(row)
 # print("CLOB length is", row[0])
 # print("BLOB length is", row[1])

@@ -17,3 +17,21 @@ nohup sh pro_am_air_dust_source_impt.sh >>pro_am_air_dust_source_impt.log 2>&1 &
 
 
 
+# 改写
+
+
+#!/bin/bash
+tables=(table1 table2 table3)
+for tab_name in ${tables[@]}; do
+  # /data/xg-fetl/sysdba 为导出数据目录; SYSDBA.${tab_name} 为表的变量名
+  java -jar xg-fetl.jar selectexp /data/xg-fetl/sysdba SYSDBA.${tab_name} "select * from SYSDBA.${tab_name} limit 100"
+done
+
+
+
+#!/bin/bash
+tables=(table1 table2 table3)
+for tab_name in ${tables[@]}; do
+  # 需要在目标端建立同样的表名及表结构; SYSDBA.${tab_name} 为表的变量名
+  java -jar xg-fetl.jar impt /data/xg-fetl/sysdba/SYSDBA.${tab_name} SYSDBA.${tab_name}
+done

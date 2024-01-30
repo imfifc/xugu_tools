@@ -1,6 +1,4 @@
-import argparse
 import csv
-import os
 import queue
 import sys
 import threading
@@ -8,11 +6,11 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from multiprocessing import freeze_support
 from pathlib import Path
-import xgcondb
 
 import pymysql
 from pymysql.cursors import DictCursor
-from generate_assess_speed import get_speed
+
+import xgcondb
 
 # 创建一个线程锁
 lock = threading.Lock()
@@ -150,29 +148,17 @@ class XuguConnectionPool:
 
 def write_csv(filename, data):
     """
-    data: [
-           (
-            [{
-                'Name': 'actionexecutelog',
-                'Engine': 'InnoDB',
-            }], "db--table--sql: ecology--actionexecutelog-- show table status from `ecology` like 'actionexecutelog';")]
     :param filename:
-    :param data: [(  [{}],temp_sql), ([],temp_sql) ]
+    :param data: [{'table': 'test2', 'my_cnt': 5000000, 'xg_cnt': 5000000, 'is_difference': False}, ...]
     :return:
     """
 
-    filename = os.path.join(dir, filename)
-    with open(filename, 'a+', newline='', errors='ignore') as f:
-        writer1 = csv.DictWriter(f, fieldnames=[])
-        write = csv.writer(f)
-        for item in data:
-            if item and item[0]:
-                datas, temp_sql = item
-                write.writerow([temp_sql])
-                fieldnames = datas[0].keys()
-                writer1.fieldnames = fieldnames
-                writer1.writeheader()
-                writer1.writerows(datas)
+    # filename = os.path.join(dir, filename)
+    fieldnames = ['table', 'my_cnt', 'xg_cnt', 'is_difference']
+    with open(filename, 'w', newline='', errors='ignore') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
 
 
 def get_databases():
@@ -211,9 +197,17 @@ def xg_tables(schema_name):
     sql = f"select t.table_name from dba_tables t left join dba_schemas s on s.schema_id=t.schema_id where s.schema_name='{schema_name}'"
     data = xg_pool.executor(sql)
     tables = [i.get('TABLE_NAME') for i in data]
-    print(tables)
+    # print(tables)
     return tables
     # print(data)
+
+
+def xg_schemas():
+    sql = 'select schema_name from dba_schemas'
+    data = xg_pool.executor(sql)
+    excludes = ['SYSSSO', 'SYSAUDITOR']
+    schemas = [i.get('SCHEMA_NAME') for i in data if i.get('SCHEMA_NAME') not in excludes]
+    return schemas
 
 
 def get_xg_table_count(schema, table):
@@ -234,26 +228,31 @@ def xg_run(schema, tables):
 
 
 def mysql_main():
-    db = 'zjm'
+    # db = 'zjm'
     dbs = get_databases()
-    print(dbs)
+    print(f"\n当前mysql的库有{dbs}")
+    db = input('请输入数据库: ')
     tables = get_tables(db)
-    print('tables', len(tables))
+    print('mysql_tables: ', len(tables))
     start = time.time()
     res = mysql_run(db, tables)
-    print(res)
+    # print(res)
     end = time.time() - start
     print(f'耗时{end:.2f}秒')
     return res
 
 
 def xg_main():
-    schema = 'ZJM'
+    # schema = 'ZJM'
+    schemas = xg_schemas()
+    print(f"\n当前xugu库:{xg_pool.connection_params.get('database')} 模式有{schemas}")
+    schema = input('请输入schema: ')
+    sql = 'select schema_name from dba_schemas;'
     tables = xg_tables(schema)
-    print('tables', len(tables))
+    print('xugu_tables: ', len(tables))
     start = time.time()
     res = xg_run(schema, tables)
-    print(res)
+    # print(res)
     end = time.time() - start
     print(f'耗时{end:.2f}秒')
     return res
@@ -262,69 +261,68 @@ def xg_main():
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
-    host = '10.28.23.207'
-    port = 3306
-    user = 'root'
-    password = 'Admin@123'
-    db = 'SYSTEM'
-    db_charset = 'utf8'
-    # host, port, user, password = parse_args()
+    # if len(sys.argv) == 1:
+    host, port, user, password = input("请输入mysql ip,端口,用户,密码,以空格分开: ").split()
+    xg_host, xg_port, xg_db, xg_user, xg_password = input("请输入xugu ip,端口,数据库,用户,密码,以空格分开: ").split()
+
+    # host = '10.28.23.207'
+    # port = 3306
+    # user = 'root'
+    # password = 'Admin@123'
+    # db_charset = 'utf8'
     pool = MysqlConnectionPool(
         max_connections=100,
         connection_params={
             "user": user,
             "password": password,
             "host": host,
-            "port": port,
+            "port": int(port),
             # "database": db_name,
             "charset": 'utf8',
         },
     )
-
-    xg_host = '10.28.20.101'
-    xg_port = 5136
-    xg_user = 'zjm'
-    xg_password = '123456'
-    xg_db = 'SYSTEM'
-    xg_db_charset = 'utf8'
-    # host, port, user, password, db = parse_args()
+    # xg_host = '10.28.20.101'
+    # xg_port = 5136
+    # xg_user = 'zjm'
+    # xg_password = '123456'
+    # xg_db = 'SYSTEM'
+    # xg_db_charset = 'utf8'
     xg_pool = XuguConnectionPool(
         max_connections=100,
         connection_params={
             "user": xg_user,
             "password": xg_password,
             "host": xg_host,
-            "port": xg_port,
-            # "db"
+            "port": int(xg_port),
             "database": xg_db,
             # "charset": 'utf8',
         },
     )
-
+    # xg_schemas()
     mysql_data = mysql_main()
-
     xg_data = xg_main()
+    my_dict = {i['table']: i for i in mysql_data}
 
-    for i in mysql_data:
-        for j in xg_data:
-            if i.get('table') == j.get('table'):
-                i.update({
-                    'xg_cnt': j.get('xg_cnt')
-                })
+    for i in xg_data:
+        tb = i['table'].lower()
+        if tb in my_dict:
+            my_dict[tb].update(i)
+        else:
+            mysql_data.append(i)
 
     for i in mysql_data:
         if i.get('my_cnt') != i.get('xg_cnt'):
             i.update({
-                'diff': True
+                'is_difference': True
             })
         else:
             i.update({
-                'diff': False
+                'is_difference': False
             })
-    print(mysql_data)
+    # print(mysql_data)
+    print(f"生成文件为: result_{timestands}.csv")
+    write_csv(f'result_{timestands}.csv', mysql_data)
 
-    # os.path.exists(dir) or os.makedirs(dir)
-    # print(dir)
-
-    # print(res)
-#     串行，0.21s
+# 10.28.23.207 3306 root Admin@123
+# 10.28.20.101 5136 system zjm 123456
+# pyinstaller -c -F  --clean  --hidden-import=xgcondb   --hidden-import=pymysql data_compare.py

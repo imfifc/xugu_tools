@@ -270,7 +270,7 @@ if __name__ == '__main__':
     # password = 'Admin@123'
     # db_charset = 'utf8'
     pool = MysqlConnectionPool(
-        max_connections=10,
+        max_connections=12,
         connection_params={
             "user": user,
             "password": password,
@@ -288,7 +288,7 @@ if __name__ == '__main__':
     # xg_db_charset = 'utf8'
     xg_host, xg_port, xg_db, xg_user, xg_password = input("请输入xugu ip,端口,数据库,用户,密码,以空格分开: ").split()
     xg_pool = XuguConnectionPool(
-        max_connections=10,
+        max_connections=12,
         connection_params={
             "user": xg_user,
             "password": xg_password,
@@ -317,7 +317,7 @@ if __name__ == '__main__':
             })
 
     # print(mysql_data)
-    count = sum(1 for i in mysql_data if not i.get('is_equal'))
+    count = sum(1 for i in mysql_data if i.get('is_equal') is False)
     print(f"生成文件为: result_{timestands}.csv; 数量有差异的表有 {count} 个 ")
     write_csv(f'result_{timestands}.csv', mysql_data)
     input('\nPress Enter to exit…')

@@ -149,12 +149,12 @@ class XuguConnectionPool:
 def write_csv(filename, data):
     """
     :param filename:
-    :param data: [{'table': 'test2', 'my_cnt': 5000000, 'xg_cnt': 5000000, 'is_difference': False}, ...]
+    :param data: [{'table': 'test2', 'my_cnt': 5000000, 'xg_cnt': 5000000, 'is_equal': False}, ...]
     :return:
     """
 
     # filename = os.path.join(dir, filename)
-    fieldnames = ['table', 'my_cnt', 'xg_cnt', 'is_difference']
+    fieldnames = ['table', 'my_cnt', 'xg_cnt', 'is_equal']
     with open(filename, 'w', newline='', errors='ignore') as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -313,16 +313,14 @@ if __name__ == '__main__':
     for i in mysql_data:
         if i.get('my_cnt') != i.get('xg_cnt'):
             i.update({
-                'is_difference': True
+                'is_equal': False
             })
-        else:
-            i.update({
-                'is_difference': False
-            })
+
     # print(mysql_data)
-    count = sum(1 for i in mysql_data if i.get('is_difference'))
+    count = sum(1 for i in mysql_data if not i.get('is_equal'))
     print(f"生成文件为: result_{timestands}.csv; 数量有差异的表有 {count} 个 ")
     write_csv(f'result_{timestands}.csv', mysql_data)
+    input('\nPress Enter to exit…')
 
 # 10.28.23.207 3306 root Admin@123
 

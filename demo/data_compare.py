@@ -172,7 +172,7 @@ def get_databases():
 def get_tables(db):
     sql = f"select table_name from information_schema.tables where  table_type !='VIEW' and table_schema not in ('information_schema', 'mysql', 'performance_schema', 'sys') and  table_schema='{db}'"
     data = pool.executor(sql)
-    tables = [i.get('TABLE_NAME') for i in data]
+    tables = [j for i in data for j in i.values()]
     return tables
 
 
@@ -263,7 +263,6 @@ if __name__ == '__main__':
         freeze_support()  # linux 不需要
     # if len(sys.argv) == 1:
     host, port, user, password = input("请输入mysql ip,端口,用户,密码,以空格分开: ").split()
-    xg_host, xg_port, xg_db, xg_user, xg_password = input("请输入xugu ip,端口,数据库,用户,密码,以空格分开: ").split()
 
     # host = '10.28.23.207'
     # port = 3306
@@ -271,7 +270,7 @@ if __name__ == '__main__':
     # password = 'Admin@123'
     # db_charset = 'utf8'
     pool = MysqlConnectionPool(
-        max_connections=100,
+        max_connections=10,
         connection_params={
             "user": user,
             "password": password,
@@ -287,8 +286,9 @@ if __name__ == '__main__':
     # xg_password = '123456'
     # xg_db = 'SYSTEM'
     # xg_db_charset = 'utf8'
+    xg_host, xg_port, xg_db, xg_user, xg_password = input("请输入xugu ip,端口,数据库,用户,密码,以空格分开: ").split()
     xg_pool = XuguConnectionPool(
-        max_connections=100,
+        max_connections=10,
         connection_params={
             "user": xg_user,
             "password": xg_password,
@@ -320,9 +320,13 @@ if __name__ == '__main__':
                 'is_difference': False
             })
     # print(mysql_data)
-    print(f"生成文件为: result_{timestands}.csv")
+    count = sum(1 for i in mysql_data if i.get('is_difference'))
+    print(f"生成文件为: result_{timestands}.csv; 数量有差异的表有 {count} 个 ")
     write_csv(f'result_{timestands}.csv', mysql_data)
 
 # 10.28.23.207 3306 root Admin@123
+
+# 192.168.103.149  3306 xugu wsB#s4a6ANa0PMni
+# 127.0.0.1 5138 SYSTEM SYSDBA SYSDBA
 # 10.28.20.101 5136 system zjm 123456
 # pyinstaller -c -F  --clean  --hidden-import=xgcondb   --hidden-import=pymysql data_compare.py

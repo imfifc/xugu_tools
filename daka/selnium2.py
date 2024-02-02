@@ -151,8 +151,8 @@ def punch_clock():
         # punch_time = current_minutes + random_minutes
         if morning_start <= current_minutes <= morning_end:
             random_minutes = random.randint(0, 5)
-            print(f'随机时间{random_minutes * 60}秒')
-            time.sleep(random_minutes * 60)
+            print(f'随机时间{random_minutes * 53}秒')
+            time.sleep(random_minutes * 53)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
@@ -165,8 +165,8 @@ def punch_clock():
 
         elif evening_start <= current_minutes <= evening_end:
             random_minutes = random.randint(0, 5)
-            print(f'随机时间{random_minutes * 60}秒')
-            time.sleep(random_minutes * 60)
+            print(f'随机时间{random_minutes * 51}秒')
+            time.sleep(random_minutes * 51)
             # punch_hour, punch_minute = divmod(punch_time, 60)
             # print(f"打卡时间：{punch_hour:02d}:{punch_minute:02d}")
             driver = login(user, password)
@@ -232,7 +232,7 @@ docker stop chrome && docker rm chrome
 # Dockerfile
 FROM chrome3.8
 WORKDIR /test
-RUN pip install  schedule -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN pip uninstall -y chinese_calendar && pip install  chinese_calendar schedule -i https://pypi.tuna.tsinghua.edu.cn/simple
 COPY . .
 
 CMD ["python","selnium2.py"]

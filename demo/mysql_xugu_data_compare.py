@@ -228,35 +228,58 @@ def xg_run(schema, tables):
     return data
 
 
-def mysql_main():
+def mysql_main(db):
     # db = 'zjm'
-    dbs = get_databases()
-    print(f"\n当前mysql的库有{dbs}")
-    db = input('请输入数据库: ')
     tables = get_tables(db)
     print('mysql_tables: ', len(tables))
     start = time.time()
     res = mysql_run(db, tables)
-    # print(res)
     end = time.time() - start
     print(f'耗时{end:.2f}秒')
     return res
 
 
-def xg_main():
+def xg_main(schema):
     # schema = 'ZJM'
-    schemas = xg_schemas()
-    print(f"\n当前xugu库:{xg_pool.connection_params.get('database')} 模式有{schemas}")
-    schema = input('请输入schema: ')
-    sql = 'select schema_name from dba_schemas;'
+    # sql = 'select schema_name from dba_schemas;'
     tables = xg_tables(schema)
     print('xugu_tables: ', len(tables))
     start = time.time()
     res = xg_run(schema, tables)
-    # print(res)
     end = time.time() - start
     print(f'耗时{end:.2f}秒')
     return res
+
+
+def main():
+    dbs = get_databases()
+    print(f"\n当前mysql的库有{dbs}")
+    db = input('请输入数据库: ')
+    mysql_data = mysql_main(db)
+
+    schemas = xg_schemas()
+    print(f"\n当前xugu库: {xg_pool.connection_params.get('database')} 模式有{schemas}")
+    schema = input('请输入schema: ')
+    xg_data = xg_main(schema)
+    my_dict = {i['table']: i for i in mysql_data}
+
+    for i in xg_data:
+        tb = i['table'].lower()
+        if tb in my_dict:
+            my_dict[tb].update(i)
+        else:
+            mysql_data.append(i)
+
+    for i in mysql_data:
+        if i.get('my_cnt') != i.get('xg_cnt'):
+            i.update({
+                'is_equal': False
+            })
+
+    # print(mysql_data)
+    count = sum(1 for i in mysql_data if i.get('is_equal') is False)
+    print(f"生成文件为: {schema}_{timestands}.csv; 数量有差异的表有 {count} 个 ")
+    write_csv(f'{schema}_{timestands}.csv', mysql_data)
 
 
 if __name__ == '__main__':
@@ -287,28 +310,12 @@ if __name__ == '__main__':
         },
     )
     # xg_schemas()
-    mysql_data = mysql_main()
-    xg_data = xg_main()
-    my_dict = {i['table']: i for i in mysql_data}
-
-    for i in xg_data:
-        tb = i['table'].lower()
-        if tb in my_dict:
-            my_dict[tb].update(i)
-        else:
-            mysql_data.append(i)
-
-    for i in mysql_data:
-        if i.get('my_cnt') != i.get('xg_cnt'):
-            i.update({
-                'is_equal': False
-            })
-
-    # print(mysql_data)
-    count = sum(1 for i in mysql_data if i.get('is_equal') is False)
-    print(f"生成文件为: result_{timestands}.csv; 数量有差异的表有 {count} 个 ")
-    write_csv(f'result_{timestands}.csv', mysql_data)
-    input('\nPress Enter to exit…')
+    while True:
+        main()
+        q = input('\nPress q to exit…or continue ')
+        if q == 'q' or q == 'Q':
+            break
+    # input('\nPress Enter to exit…')
 
 # 10.28.23.207 3306 root Admin@123
 

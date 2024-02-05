@@ -97,7 +97,8 @@ class XuguConnectionPool:
         try:
             return xgcondb.connect(**self.connection_params)
         except Exception as e:
-            print(e)
+            print('xugu 建立连接失败，重试一次', e)
+            return xgcondb.connect(**self.connection_params)
 
     def get_connection(self):
         try:
@@ -261,14 +262,7 @@ def xg_main():
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
-    # if len(sys.argv) == 1:
     host, port, user, password = input("请输入mysql ip,端口,用户,密码,以空格分开: ").split()
-
-    # host = '10.28.23.207'
-    # port = 3306
-    # user = 'root'
-    # password = 'Admin@123'
-    # db_charset = 'utf8'
     pool = MysqlConnectionPool(
         max_connections=12,
         connection_params={
@@ -280,21 +274,15 @@ if __name__ == '__main__':
             "charset": 'utf8',
         },
     )
-    # xg_host = '10.28.20.101'
-    # xg_port = 5136
-    # xg_user = 'zjm'
-    # xg_password = '123456'
-    # xg_db = 'SYSTEM'
-    # xg_db_charset = 'utf8'
     xg_host, xg_port, xg_db, xg_user, xg_password = input("请输入xugu ip,端口,数据库,用户,密码,以空格分开: ").split()
     xg_pool = XuguConnectionPool(
-        max_connections=12,
+        max_connections=6,
         connection_params={
-            "user": xg_user,
-            "password": xg_password,
-            "host": xg_host,
+            "user": xg_user.strip(),
+            "password": xg_password.strip(),
+            "host": xg_host.strip(),
             "port": int(xg_port),
-            "database": xg_db,
+            "database": xg_db.strip(),
             # "charset": 'utf8',
         },
     )
@@ -325,6 +313,7 @@ if __name__ == '__main__':
 # 10.28.23.207 3306 root Admin@123
 
 # 192.168.103.149  3306 xugu wsB#s4a6ANa0PMni
+# 192.168.103.144 5138 pro_air SYSDBA SYSDBA
 # 127.0.0.1 5138 SYSTEM SYSDBA SYSDBA
 # 10.28.20.101 5136 system zjm 123456
 # pyinstaller -c -F  --clean  --hidden-import=xgcondb   --hidden-import=pymysql data_compare.py

@@ -97,7 +97,7 @@ class XuguConnectionPool:
         try:
             return xgcondb.connect(**self.connection_params)
         except Exception as e:
-            print('xugu 建立连接失败，重试一次', e)
+            print('xugu 建立连接失败，正在重试一次', e)
             return xgcondb.connect(**self.connection_params)
 
     def get_connection(self):
@@ -312,9 +312,10 @@ if __name__ == '__main__':
     # xg_schemas()
     while True:
         main()
-        q = input('\nPress q to exit…or continue ')
+        q = input('\n按q退出, 按其他任意键继续 ')
         if q == 'q' or q == 'Q':
             break
+
     # input('\nPress Enter to exit…')
 
 # 10.28.23.207 3306 root Admin@123

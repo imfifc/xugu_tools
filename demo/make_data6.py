@@ -206,19 +206,21 @@ def once_proc():
     start = time.time()
     multi_process(paralell_n, nums, db_host, db_port, db_user, db_pwd, db_name)
     end = time.time() - start
-    show('sys_key')
+    if nums * paralell_n <= 1000000:
+        show('sys_key')
+    # show('sys_key') # 数据量太大不用
     print(f'耗时{end:.2f}秒', f'tps:{(nums * paralell_n / end):.2f} 行/s')
 
 
 if __name__ == '__main__':
     if sys.platform == 'win32':
         freeze_support()  # linux 不需要
-    db_host = '127.0.0.1'
-    db_port = 5138
-    db_user = 'SYSDBA'
-    db_pwd = 'SYSDBA'
-    db_name = 'SYSTEM'
-    # db_host, db_port, db_user, db_pwd, db_name = parse_args()
+    # db_host = '127.0.0.1'
+    # db_port = 5138
+    # db_user = 'SYSDBA'
+    # db_pwd = 'SYSDBA'
+    # db_name = 'SYSTEM'
+    db_host, db_port, db_user, db_pwd, db_name = parse_args()
     cur = get_cur(db_host, db_port, db_user, db_pwd, db_name)
 
     cur.execute('set max_loop_num to 0')

@@ -144,7 +144,7 @@ def punch_clock():
     morning_start = 8 * 60
     morning_end = 8 * 60 + 58
     evening_start = 15 * 60
-    evening_end = 18 * 60 + 60
+    evening_end = 20 * 60 + 60
     while is_workday(today):
         current_time = time.localtime(time.time())
         current_minutes = current_time.tm_hour * 60 + current_time.tm_min

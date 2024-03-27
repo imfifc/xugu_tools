@@ -24,7 +24,10 @@ nohup sh pro_am_air_dust_source_impt.sh >>pro_am_air_dust_source_impt.log 2>&1 &
 tables=(table1 table2 table3)
 for tab_name in ${tables[@]}; do
   # /data/xg-fetl/sysdba 为导出数据目录; SYSDBA.${tab_name} 为表的变量名
+  # 部分导出
   java -jar xg-fetl.jar selectexp /data/xg-fetl/sysdba SYSDBA.${tab_name} "select * from SYSDBA.${tab_name} limit 100"
+  #或者 全部导出
+  java -jar xg-fetl.jar exp /DATA1/ljc/xg-fetl/SYSDBA SYSDBA.${tab_name}
 done
 
 

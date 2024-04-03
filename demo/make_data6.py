@@ -142,7 +142,7 @@ def create_sys_key_generate_tb(table):
             CREATE_BY varchar(64)  NOT NULL COMMENT '创建人',
             CREATE_TIME timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
             CUR_VERSION int NOT NULL DEFAULT '0' COMMENT '版本号'
-            ) comment '密钥备用库表';
+            ) hotspot 12 comment '密钥备用库表';
     """
     cur.execute(sql)
 

@@ -1,12 +1,12 @@
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 import psutil
 
 
-def get_top_cpu_process(duration=2):
+def get_top_cpu_process(duration=1):
     start_time = time.time()
     process_info = {}
 
@@ -55,7 +55,7 @@ def get_top_cpu_process(duration=2):
         cpu = process[1]['cpu'] / duration
         memory = process[1]['memory'] / duration
         cmdline = process[1]['cmdline']
-        print(f"pid:{pid:10}, cpu:{cpu:7.2f}, memory:{memory:10.2f}MB, cmd:{cmdline}")
+        print(f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}")
 
 
 def exec_command(cmd):
@@ -98,7 +98,7 @@ def parse_io_data(strings, dev='all'):
     print(f'磁盘io平均值: \n {averages}')
 
 
-def iostat(n=2, dev='all'):
+def iostat(n=1, dev='all'):
     io_cmd = f"iostat -xmd {n} {n} "
     ret_code, ret_msg = exec_command(io_cmd)
     if ret_code == 0:
@@ -143,11 +143,36 @@ def parse_net_data(data_lines):
 
 
 def get_net_data(n=1):
-    net_cmd = f" sar -n DEV {n} 2"
+    net_cmd = f" sar -n DEV {n} 1"
     ret_code, ret_msg = exec_command(net_cmd)
     if ret_code == 0:
         # print(ret_msg)
         parse_net_data(ret_msg)
+
+
+def get_cpu_usage():
+    cpu_times = psutil.cpu_times_percent(interval=1, percpu=False)
+    if cpu_times.iowait > 10:
+        io_wait = print_red(str(cpu_times.iowait))
+    else:
+        io_wait = cpu_times.iowait
+    # print(
+    #     f"%Cpu(s): {cpu_times.user} user, {cpu_times.system} system, {cpu_times.idle} idle,{cpu_times.nice} nice, {io_wait}  I/O wait, {cpu_times.irq} irq, {cpu_times.softirq} SoftIrq, {cpu_times.steal} steal")
+
+    mem = psutil.virtual_memory()
+    total_mib = mem.total / (1024 ** 3)
+    free_mib = mem.free / (1024 ** 3)
+    used_mib = mem.used / (1024 ** 3)
+    buff_cache_mib = (mem.buffers + mem.cached) / (1024 ** 3)
+    print(
+        f"\n %Cpu(s): {cpu_times.user} us, {cpu_times.system} sy, {cpu_times.nice} ni, {cpu_times.idle} id, {io_wait} io_wait, {cpu_times.irq} hi, {cpu_times.softirq} si, {cpu_times.steal} st")
+    print(
+        f"Memory(GB): {total_mib:.1f} total,  {free_mib:.1f} free, {used_mib:.1f} used,  {buff_cache_mib:.1f} buff/cache\n")
+
+
+def print_red(text):
+    red_text = "\033[31m" + text + "\033[0m"
+    return red_text
 
 
 def main(task_names):
@@ -167,9 +192,7 @@ def main(task_names):
 
 if __name__ == "__main__":
     start = time.time()
-    # get_top_cpu_process()
-    # iostat(dev='all', n=2)
-    # get_net_data(1)
-    tasknames = [iostat, get_top_cpu_process, get_net_data]
-    main(tasknames)
-    print(time.time() - start)
+    tasknames = [get_top_cpu_process, iostat, get_net_data, get_cpu_usage]
+    while 1:
+        main(tasknames)
+        time.sleep(2)

@@ -1,8 +1,11 @@
 # -*- coding:utf-8 -*-
 import os
 import platform
+import socket
 import subprocess
+
 # import multiprocessing
+import psutil
 
 
 def check_hyperthreading():
@@ -184,20 +187,19 @@ def check_others():
     性能分析工具：perf（yum install -y perf）
     系统活动情况监控：sar（yum install -y sysstat）
     """
-    code, msg = exec_command('yum install -y iotop perf sysstat')
+    code, msg = exec_command('yum install -y iotop perf sysstat  iperf3')
     if code == 0:
-        print('iotop perf sysstat 已安装')
+        print('3.5 iotop perf sysstat iperf3 已安装')
     else:
         print(msg)
 
 
-def check_port():
-    code, msg = exec_command('lsof -i:5138')
-    if code == 0:
-        print('4. 端口5138 已被占用')
-    else:
-        code, msg = exec_command('netstat -tunlp |grep :5138')
-        print('4. 端口5138 未被占用', msg)
+def check_port(host='localhost', port=5138):
+    try:
+        socket.create_connection((host, port), timeout=2)
+        print('4. 端口5138 被占用')
+    except Exception as e:
+        print('4. 端口5138 未被占用')
 
 
 def check_sys_kernel():
@@ -240,7 +242,7 @@ def check_sys_kernel():
 def check_firewalld():
     code, ret_msg = exec_command('systemctl stop firewalld && systemctl disable firewalld')
     if code == 0:
-        print('3.5 防火墙已关闭')
+        print('3.6 防火墙已关闭')
     else:
         print(f'防火墙关闭失败 {ret_msg}')
 
@@ -272,8 +274,14 @@ def show_sys_version():
 if __name__ == "__main__":
     sys_version = show_sys_version()
     arch = platform.machine()
-
+    memory_info = psutil.virtual_memory()
+    total = memory_info.total / 1024 / 1024 / 1024
+    available = memory_info.available / 1024 / 1024 / 1024
+    percent = memory_info.percent
+    used = memory_info.used / 1024 / 1024 / 1024
+    # free = memory_info.free / 1024 / 1024 / 1024
     print(f'\n当前系统为: {sys_version} 架构: {arch} \n')
+    print(f'内存总量 {total :.2f}g 可用内存{available :.2f}g 使用{used:.2f}g 使用百分比{percent} \n')
     check_hyperthreading2()
     update_sysctl_conf()
     check_depend_rpm_and_service()
@@ -281,5 +289,6 @@ if __name__ == "__main__":
     check_gdb()
     check_libaio()
     check_sys_kernel()
+    check_others()
     check_firewalld()
     check_port()

@@ -1,34 +1,6 @@
-# import subprocess
-# import time
-#
-#
-# def monitor_top(interval, duration):
-#     command = "top -b -n {} -d {} -c ".format(duration // interval, interval)
-#     process = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-#
-#     for line in iter(process.stdout.readline, b''):
-#         print(line.decode())
-#
-#     process.stdout.close()
-#     process.wait()
-#
-#
-# def exec_command(cmd):
-#     result = subprocess.run(cmd, check=True, shell=True, capture_output=True, text=True)
-#     print(result.stdout)
-#
-#
-# if __name__ == "__main__":
-#     interval = 1  # 采样间隔时间（秒）
-#     duration = 1  # 监控持续时间（秒）
-#
-#     # monitor_top(interval, duration)
-#
-#     # exec_command('top -o %CPU -b -n 1 -d 1 -c')
-#     exec_command('top -c -b -n 1 -d 1')
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 import pandas as pd
 import psutil
@@ -69,13 +41,13 @@ def get_top_cpu_process(duration=2):
     top_processs = sorted(process_info.items(), key=lambda x: x[1]['cpu'], reverse=True)[:4]
     mem_processs = sorted(process_info.items(), key=lambda x: x[1]['memory'], reverse=True)[:4]
 
-    print('cpu排序:')
+    print('cpu排序:\n', f"{'pid':>10} {'cpu':>7} {'memory':>10} {'cmdline':>10}\n")
     for process in top_processs:
         pid = process[0]
         cpu = process[1]['cpu'] / duration
         memory = process[1]['memory'] / duration
         cmdline = process[1]['cmdline']
-        print(f"pid:{pid:10}, cpu:{cpu:7.2f}, memory:{memory:10.2f}MB, cmd:{cmdline}")
+        print(f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}")
 
     print('内存排序:')
     for process in mem_processs:
@@ -122,44 +94,58 @@ def parse_io_data(strings, dev='all'):
     df = pd.DataFrame(p_data, columns=['Device', 'r/s', 'w/s', 'rMB/s', 'wMB/s', 'r_await', 'w_await', 'd_await',
                                        '%util'])
     averages = df.groupby('Device').mean().round(2)
-    print(averages)
+    # print('磁盘io平均值:')
+    print(f'磁盘io平均值: \n {averages}')
 
 
 def iostat(n=2, dev='all'):
     io_cmd = f"iostat -xmd {n} {n} "
     ret_code, ret_msg = exec_command(io_cmd)
     if ret_code == 0:
-        print('磁盘io平均值:')
         # print(ret_msg)
         parse_io_data(ret_msg, dev=dev)
 
 
-def parse_net_data(ss):
-    iface, rp, tp, rb, tb, ifutil = None, None, None, None, None, None
-    for line in ss.splitlines():
-        if line and '平均时间' in line or 'Average' in line:
+def parse_net_data(data_lines):
+    data_lines = data_lines.splitlines()
+    iface_index, rp_index, tp_index, rb_index, tb_index, util_index = None, None, None, None, None, None
+    for line in data_lines:
+        if '平均时间' in line or 'Average' in line:
             data = line.split()
-            iface = data.index('IFACE')
-            rp = data.index('rxpck/s')
-            tp = data.index('txpck/s')
-            rb = data.index('rxkB/s')
-            tb = data.index('txkB/s')
-            util = data.index('%ifutil')
+            iface_index = data.index('IFACE')
+            rp_index = data.index('rxpck/s')
+            tp_index = data.index('txpck/s')
+            rb_index = data.index('rxkB/s')
+            tb_index = data.index('txkB/s')
+            util_index = data.index('%ifutil') if '%ifutil' in line else ''
             break
-    for line in ss.splitlines()[2:]:
+    ss = ''
+    for line in data_lines:
         if 'IFACE' in line and ('平均时间' in line or 'Average' in line):
-            print(f"{data[1]:13} {data[2]:>10} {data[3]:>10} {'rxMB/s':>10} {'rxMB/s':>10} {data[-1]:>10}")
-        if line and 'IFACE' not in line and ('平均时间' in line or 'Average' in line):
+            if util_index:
+                print(
+                    f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10} {'%ifutil':>10}")
+            else:
+                print(f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10}")
+
+        elif '平均时间' in line or 'Average' in line:
             data = line.split()
-            print(
-                f"{data[1]:13} {data[2]:>10} {data[3]:>10} {float(data[4]) / 1024:>10.2f} {float(data[5]) / 1024:>10.2f} {float(data[-1]):>10.2f}")
+            iface = data[iface_index]
+            rxpck = data[rp_index]
+            txpck = data[tp_index]
+            rxkb = float(data[rb_index]) / 1024
+            txkb = float(data[tb_index]) / 1024
+            if util_index:
+                ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f} {float(data[util_index]):>10.2f}\n"
+            else:
+                ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f}\n"
+    print(ss.rstrip())
 
 
 def get_net_data(n=1):
     net_cmd = f" sar -n DEV {n} 2"
     ret_code, ret_msg = exec_command(net_cmd)
     if ret_code == 0:
-        print('网络:')
         # print(ret_msg)
         parse_net_data(ret_msg)
 
@@ -184,6 +170,6 @@ if __name__ == "__main__":
     # get_top_cpu_process()
     # iostat(dev='all', n=2)
     # get_net_data(1)
-    tasknames = [get_top_cpu_process, iostat, get_net_data]
+    tasknames = [iostat, get_top_cpu_process, get_net_data]
     main(tasknames)
     print(time.time() - start)

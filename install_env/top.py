@@ -1,4 +1,6 @@
+import os
 import subprocess
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -6,7 +8,32 @@ import pandas as pd
 import psutil
 
 
+def clear_screen():
+    if sys.platform.startswith('win'):
+        os.system('cls')
+    else:
+        os.system('clear')
+
+
 def get_top_cpu_process(duration=1):
+    cpu_times = psutil.cpu_times_percent(interval=1, percpu=False)
+    if cpu_times.iowait > 10:
+        io_wait = print_red(str(cpu_times.iowait))
+    else:
+        io_wait = cpu_times.iowait
+    # print(
+    #     f"%Cpu(s): {cpu_times.user} user, {cpu_times.system} system, {cpu_times.idle} idle,{cpu_times.nice} nice, {io_wait}  I/O wait, {cpu_times.irq} irq, {cpu_times.softirq} SoftIrq, {cpu_times.steal} steal")
+
+    mem = psutil.virtual_memory()
+    total_mib = mem.total / (1024 ** 3)
+    free_mib = mem.free / (1024 ** 3)
+    used_mib = mem.used / (1024 ** 3)
+    buff_cache_mib = (mem.buffers + mem.cached) / (1024 ** 3)
+
+    ss = ''
+    ss += f"%Cpu(s): {cpu_times.user} us, {cpu_times.system} sy, {cpu_times.nice} ni, {cpu_times.idle} id, {io_wait} io_wait, {cpu_times.irq} hi, {cpu_times.softirq} si, {cpu_times.steal} st \n"
+    ss += f"Memory(GB): {total_mib:.1f} total,  {free_mib:.1f} free, {used_mib:.1f} used,  {buff_cache_mib:.1f} buff/cache \n\n"
+
     start_time = time.time()
     process_info = {}
 
@@ -41,21 +68,24 @@ def get_top_cpu_process(duration=1):
     top_processs = sorted(process_info.items(), key=lambda x: x[1]['cpu'], reverse=True)[:4]
     mem_processs = sorted(process_info.items(), key=lambda x: x[1]['memory'], reverse=True)[:4]
 
-    print('cpu排序:\n', f"{'pid':>10} {'cpu':>7} {'memory':>10} {'cmdline':>10}\n")
+    ss += 'cpu排序:\n'
+    ss += f"{'pid':>10} {'cpu':>7} {'memory':>10} {'cmdline':>10}\n"
     for process in top_processs:
         pid = process[0]
         cpu = process[1]['cpu'] / duration
         memory = process[1]['memory'] / duration
         cmdline = process[1]['cmdline']
-        print(f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}")
+        ss += f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}\n"
 
-    print('内存排序:')
+    ss += '内存排序:\n'
     for process in mem_processs:
         pid = process[0]
         cpu = process[1]['cpu'] / duration
         memory = process[1]['memory'] / duration
         cmdline = process[1]['cmdline']
-        print(f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}")
+        ss += f"{pid:>10} {cpu:>7.2f}  {memory:>10.2f}MB  {cmdline}\n"
+
+    return ss
 
 
 def exec_command(cmd):
@@ -95,7 +125,11 @@ def parse_io_data(strings, dev='all'):
                                        '%util'])
     averages = df.groupby('Device').mean().round(2)
     # print('磁盘io平均值:')
-    print(f'磁盘io平均值: \n {averages}')
+    # print(str(averages))
+    ss = ''
+    ss += '磁盘io平均值: \n'
+    ss += str(averages)
+    return ss
 
 
 def iostat(n=1, dev='all'):
@@ -103,7 +137,7 @@ def iostat(n=1, dev='all'):
     ret_code, ret_msg = exec_command(io_cmd)
     if ret_code == 0:
         # print(ret_msg)
-        parse_io_data(ret_msg, dev=dev)
+        return parse_io_data(ret_msg, dev=dev)
 
 
 def parse_net_data(data_lines):
@@ -123,10 +157,9 @@ def parse_net_data(data_lines):
     for line in data_lines:
         if 'IFACE' in line and ('平均时间' in line or 'Average' in line):
             if util_index:
-                print(
-                    f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10} {'%ifutil':>10}")
+                ss += f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10} {'%ifutil':>10}\n"
             else:
-                print(f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10}")
+                ss += f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10}\n"
 
         elif '平均时间' in line or 'Average' in line:
             data = line.split()
@@ -139,7 +172,7 @@ def parse_net_data(data_lines):
                 ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f} {float(data[util_index]):>10.2f}\n"
             else:
                 ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f}\n"
-    print(ss.rstrip())
+    return ss
 
 
 def get_net_data(n=1):
@@ -147,27 +180,7 @@ def get_net_data(n=1):
     ret_code, ret_msg = exec_command(net_cmd)
     if ret_code == 0:
         # print(ret_msg)
-        parse_net_data(ret_msg)
-
-
-def get_cpu_usage():
-    cpu_times = psutil.cpu_times_percent(interval=1, percpu=False)
-    if cpu_times.iowait > 10:
-        io_wait = print_red(str(cpu_times.iowait))
-    else:
-        io_wait = cpu_times.iowait
-    # print(
-    #     f"%Cpu(s): {cpu_times.user} user, {cpu_times.system} system, {cpu_times.idle} idle,{cpu_times.nice} nice, {io_wait}  I/O wait, {cpu_times.irq} irq, {cpu_times.softirq} SoftIrq, {cpu_times.steal} steal")
-
-    mem = psutil.virtual_memory()
-    total_mib = mem.total / (1024 ** 3)
-    free_mib = mem.free / (1024 ** 3)
-    used_mib = mem.used / (1024 ** 3)
-    buff_cache_mib = (mem.buffers + mem.cached) / (1024 ** 3)
-    print(
-        f"\n %Cpu(s): {cpu_times.user} us, {cpu_times.system} sy, {cpu_times.nice} ni, {cpu_times.idle} id, {io_wait} io_wait, {cpu_times.irq} hi, {cpu_times.softirq} si, {cpu_times.steal} st")
-    print(
-        f"Memory(GB): {total_mib:.1f} total,  {free_mib:.1f} free, {used_mib:.1f} used,  {buff_cache_mib:.1f} buff/cache\n")
+        return parse_net_data(ret_msg)
 
 
 def print_red(text):
@@ -176,7 +189,6 @@ def print_red(text):
 
 
 def main(task_names):
-    # print(len(task_names))
     with ThreadPoolExecutor(max_workers=len(task_names)) as executor:
         futures = executor.map(lambda func: func(), task_names)
         # 获取并处理任务的返回结果
@@ -184,7 +196,7 @@ def main(task_names):
             try:
                 # for future in concurrent.futures.as_completed(futures):
                 if future is not None:
-                    future.result()
+                    print(future)
             # print(f"Function task returned: {result}")
             except Exception as e:
                 print(f"Function task encountered an error: {e}")
@@ -192,7 +204,10 @@ def main(task_names):
 
 if __name__ == "__main__":
     start = time.time()
-    tasknames = [get_top_cpu_process, iostat, get_net_data, get_cpu_usage]
+    tasknames = [get_top_cpu_process, iostat, get_net_data]
     while 1:
+        clear_screen()
         main(tasknames)
-        time.sleep(2)
+        time.sleep(3)
+
+    # print(time.time() - start)

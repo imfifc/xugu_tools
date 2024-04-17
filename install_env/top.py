@@ -8,6 +8,8 @@ import pandas as pd
 import psutil
 
 
+# pyinstaller -c -F  --clean  --hidden-import=pandas   --hidden-import=psutil top.py
+
 def clear_screen():
     if sys.platform.startswith('win'):
         os.system('cls')
@@ -37,32 +39,32 @@ def get_top_cpu_process(duration=1):
     start_time = time.time()
     process_info = {}
 
-    while time.time() - start_time < duration:
-        for process in psutil.process_iter(['pid', 'name', 'cpu_percent']):
-            try:
-                pid = process.info['pid']
-                cpu_percent = process.info['cpu_percent']
-                cmdline = process.cmdline()
-                memory_info = process.memory_info()
-                if cmdline:
-                    if pid in process_info:
-                        process_info[pid]['cpu'] += cpu_percent
-                        process_info[pid]['memory'] += memory_info.rss / 1024 / 1024
-                    else:
-                        # process_info[pid] = {'cpu_percent': cpu_percent,
-                        process_info[pid] = {
-                            'name': psutil.Process(pid).name(),
-                            'cpu': cpu_percent,
-                            'memory': memory_info.rss / 1024 / 1024,
-                            'cmdline': ' '.join(cmdline),
-                        }
+    # while time.time() - start_time < duration:
+    for process in psutil.process_iter(['pid', 'name', 'cpu_percent']):
+        try:
+            pid = process.info['pid']
+            cpu_percent = process.info['cpu_percent']
+            cmdline = process.cmdline()
+            memory_info = process.memory_info()
+            if cmdline:
+                if pid in process_info:
+                    process_info[pid]['cpu'] += cpu_percent
+                    process_info[pid]['memory'] += memory_info.rss / 1024 / 1024
+                else:
+                    # process_info[pid] = {'cpu_percent': cpu_percent,
+                    process_info[pid] = {
+                        'name': psutil.Process(pid).name(),
+                        'cpu': cpu_percent,
+                        'memory': memory_info.rss / 1024 / 1024,
+                        'cmdline': ' '.join(cmdline),
+                    }
 
-            except psutil.ZombieProcess:
-                continue
-            except psutil.AccessDenied:
-                continue
+        except psutil.ZombieProcess:
+            continue
+        except psutil.AccessDenied:
+            continue
 
-        time.sleep(1)
+        # time.sleep(0.1)
 
     # print(process_info)
     top_processs = sorted(process_info.items(), key=lambda x: x[1]['cpu'], reverse=True)[:4]
@@ -153,13 +155,21 @@ def parse_net_data(data_lines):
             tb_index = data.index('txkB/s')
             util_index = data.index('%ifutil') if '%ifutil' in line else ''
             break
+
+    max_len = 0
+    for line in data_lines:
+        if '平均时间' in line or 'Average' in line:
+            data = line.split()
+            iface = data[iface_index]
+            max_len = len(iface) if len(iface) > max_len else max_len
+
     ss = ''
     for line in data_lines:
         if 'IFACE' in line and ('平均时间' in line or 'Average' in line):
             if util_index:
-                ss += f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10} {'%ifutil':>10}\n"
+                ss += f"网络平均值: \n{'IFACE':{max_len}} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10} {'%ifutil':>10}\n"
             else:
-                ss += f"网络平均值: \n{'IFACE':13} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10}\n"
+                ss += f"网络平均值: \n{'IFACE':{max_len}} {'rxpck/s':>10} {'txpck/s':>10} {'rxMB/s':>10} {'txMB/s':>10}\n"
 
         elif '平均时间' in line or 'Average' in line:
             data = line.split()
@@ -169,9 +179,9 @@ def parse_net_data(data_lines):
             rxkb = float(data[rb_index]) / 1024
             txkb = float(data[tb_index]) / 1024
             if util_index:
-                ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f} {float(data[util_index]):>10.2f}\n"
+                ss += f"{iface:{max_len}} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f} {float(data[util_index]):>10.2f}\n"
             else:
-                ss += f"{iface:13} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f}\n"
+                ss += f"{iface:{max_len}} {rxpck:>10} {txpck:>10} {rxkb:>10.2f} {txkb:>10.2f}\n"
     return ss
 
 
@@ -204,6 +214,7 @@ def main(task_names):
 
 if __name__ == "__main__":
     start = time.time()
+    # print(get_top_cpu_process())
     tasknames = [get_top_cpu_process, iostat, get_net_data]
     while 1:
         clear_screen()

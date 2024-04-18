@@ -70,7 +70,7 @@ def get_top_cpu_process(duration=1):
     top_processs = sorted(process_info.items(), key=lambda x: x[1]['cpu'], reverse=True)[:4]
     mem_processs = sorted(process_info.items(), key=lambda x: x[1]['memory'], reverse=True)[:4]
 
-    ss += 'cpu排序:\n'
+    ss += 'CPU排序:\n'
     ss += f"{'pid':>10} {'cpu':>7} {'memory':>10} {'cmdline':>10}\n"
     for process in top_processs:
         pid = process[0]
@@ -212,13 +212,17 @@ def main(task_names):
                 print(f"Function task encountered an error: {e}")
 
 
-if __name__ == "__main__":
-    start = time.time()
+def run(second=3):
+    # start = time.time()
     # print(get_top_cpu_process())
     tasknames = [get_top_cpu_process, iostat, get_net_data]
     while 1:
         clear_screen()
         main(tasknames)
-        time.sleep(3)
+        time.sleep(second)
+
+
+if __name__ == "__main__":
+    run()
 
     # print(time.time() - start)

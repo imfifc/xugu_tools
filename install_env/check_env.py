@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import argparse
 import os
 import platform
 import socket
@@ -6,6 +7,8 @@ import subprocess
 
 # import multiprocessing
 import psutil
+
+from top import run
 
 
 def check_hyperthreading():
@@ -271,7 +274,20 @@ def show_sys_version():
     return msg
 
 
-if __name__ == "__main__":
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='默认用于虚谷数据库部署时环境检查及修复; 使用-s 用于性能分析定位瓶颈',
+        prefix_chars='-'
+    )
+    parser.add_argument('-s', '--second', nargs='?', const=3, help='')
+    # parser.add_argument('-s', action='store_true', help='性能分析定位瓶颈')
+    # parser.add_argument('--s', type=int, default=None, help='刷新间隔，默认每3秒刷新一次')
+
+    args = parser.parse_args()
+    return args.second
+
+
+def main():
     sys_version = show_sys_version()
     arch = platform.machine()
     memory_info = psutil.virtual_memory()
@@ -292,3 +308,11 @@ if __name__ == "__main__":
     check_others()
     check_firewalld()
     check_port()
+
+
+if __name__ == "__main__":
+    mode = parse_args()
+    if mode:
+        run(second=int(mode))
+    else:
+        main()

@@ -226,3 +226,5 @@ if __name__ == "__main__":
     run()
 
     # print(time.time() - start)
+
+# pyinstaller -c -F  --clean  --hidden-import=pandas   --hidden-import=psutil check_env.py

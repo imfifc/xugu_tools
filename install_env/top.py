@@ -198,6 +198,38 @@ def print_red(text):
     return red_text
 
 
+def check_disk_space():
+    """
+    当磁盘容量最大的3个且都大于100g,如果使用率>95% 就告警提示
+    :return:
+    """
+    partitions = psutil.disk_partitions(all=True)
+    disk_space_info = []
+    for partition in partitions:
+        usage = psutil.disk_usage(partition.mountpoint)
+        if usage.total != 0:
+            disk_space_info.append(
+                (partition.device, usage.total / 1024 / 1024 / 1024, usage.used / 1024 / 1024 / 1024,
+                 usage.free / 1024 / 1024 / 1024, usage.percent, partition.mountpoint))
+
+    disk_space_info.sort(key=lambda x: (-x[1], -x[2]), reverse=False)
+    top_3_disks = disk_space_info[:7]
+
+    max_len = 0
+    for i in top_3_disks:
+        max_len = len(i[0]) if len(i[0]) > max_len else max_len
+
+    ss = f"磁盘空间不足\n{'Filesystem':{max_len}}  {'Size':>10}  {'Used':>10} {'Avail':>10}  {'Use%':>10}  {'Mounted_on':10} \n"
+    res = []
+    for disk in top_3_disks:
+        if disk[1] > 100 and disk[-2] > 95:
+            res.append(
+                f'{disk[0]:{max_len}} {disk[1]:>10.2f}g {disk[2]:10.2f}g {disk[3]:10.2f}g {disk[4]:10.2f} {disk[5]}')
+    if res:
+        ss += '\n'.join(res)
+        print(print_red(ss))
+
+
 def main(task_names):
     with ThreadPoolExecutor(max_workers=len(task_names)) as executor:
         futures = executor.map(lambda func: func(), task_names)
@@ -215,7 +247,7 @@ def main(task_names):
 def run(second=3):
     # start = time.time()
     # print(get_top_cpu_process())
-    tasknames = [get_top_cpu_process, iostat, get_net_data]
+    tasknames = [get_top_cpu_process, iostat, get_net_data, check_disk_space]
     while 1:
         clear_screen()
         main(tasknames)

@@ -7,6 +7,8 @@ import csv
 import os
 import time
 
+EXCEPT_USERS = ['SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS']
+
 
 class OracleConnectionPool:
     def __init__(self, user, password, dsn, min_connections=2, max_connections=100):
@@ -39,6 +41,7 @@ class OracleConnectionPool:
             self.pool.close()
 
     def executor(self, sql):
+        # todo 需要打印报错sql
         conn = self.get_connection()
         with conn.cursor() as cursor:
             cursor.execute(sql)
@@ -49,25 +52,25 @@ class OracleConnectionPool:
         return results
 
 
-def use_privilege_conn(sql):
-    """
-    使用sysdba 模式
-    :param sql:
-    :return:
-    """
-    with cx_Oracle.connect(pre_user, pre_password, dsn, mode=cx_Oracle.SYSDBA) as conn:
-        cur = conn.cursor()
-        try:
-            cur.execute(sql)
-            # cur.rowfactory = make_dict_factory(cur)
-            columns = [col[0] for col in cur.description]
-            cur.rowfactory = lambda *args: dict(zip(columns, args))
-            data = cur.fetchall()
-            # print(data)
-            return data
-        except Exception as e:
-            print("查询失败", e)
-        conn.commit()
+# def use_privilege_conn(sql):
+#     """
+#     使用sysdba 模式
+#     :param sql:
+#     :return:
+#     """
+#     with cx_Oracle.connect(pre_user, pre_password, dsn, mode=cx_Oracle.SYSDBA) as conn:
+#         cur = conn.cursor()
+#         try:
+#             cur.execute(sql)
+#             # cur.rowfactory = make_dict_factory(cur)
+#             columns = [col[0] for col in cur.description]
+#             cur.rowfactory = lambda *args: dict(zip(columns, args))
+#             data = cur.fetchall()
+#             # print(data)
+#             return data
+#         except Exception as e:
+#             print("查询失败", e)
+#         conn.commit()
 
 
 def write_csv(filename, data):
@@ -97,6 +100,22 @@ def write_csv(filename, data):
                 writer1.writerows(datas)
 
 
+def check_dba_privelege():
+    """
+    查询当前用户有哪些权限
+    DBA
+    RESOURCE
+    CONNECT
+    """
+    sql = "select granted_role from user_role_privs"
+    res = pool.executor(sql)
+    res = [v.lower() for i in res for _, v in i.items()]
+    # print(res)
+    if 'dba' in res:
+        return True
+    return False
+
+
 def get_databases():
     sql_user = "select username from dba_users WHERE ACCOUNT_STATUS ='OPEN' order by username"
     users = pool.executor(sql_user)
@@ -123,15 +142,28 @@ def get_objects_count():
 SQL>  select object_type,count(*) from all_objects where owner='USER' group by object_type;
     :return:
     """
-    sql_user = "select username from dba_users WHERE ACCOUNT_STATUS ='OPEN' order by username"
-    users = pool.executor(sql_user)
-    users = [i.get('USERNAME') for i in users]
-    db_objects = []
-    for user in users:
-        sql = f"""select object_type,count(*)  from dba_objects where owner='{user}' group by object_type"""
-        res = pool.executor(sql)
-        tmp_sql = f'schema--table--sql: {user}--dba_objects-- {sql}'
-        db_objects.append((res, tmp_sql))
+    if check_dba_privelege():
+        dba_user = "SELECT username FROM dba_users WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN' order by username"
+        # sql_user = "select username from dba_users WHERE ACCOUNT_STATUS ='OPEN' order by username"
+        users = pool.executor(dba_user)
+        users = [v for i in users for _, v in i.items()]
+        db_objects = []
+        for user in users:
+            sql = f"""select object_type "对象类型",count(*) "个数" from dba_objects where owner='{user}' group by object_type"""
+            res = pool.executor(sql)
+            tmp_sql = f'schema--table--sql: {user}--dba_objects-- {sql}'
+            db_objects.append((res, tmp_sql))
+    else:
+        sql_user = 'SELECT username FROM all_users '
+        users = pool.executor(sql_user)
+        users = [v for i in users for _, v in i.items() if v not in EXCEPT_USERS]
+        db_objects = []
+        for user in users:
+            sql = f"""select object_type "对象类型",count(*) "个数"  from all_objects where owner='{user}' group by object_type"""
+            res = pool.executor(sql)
+            tmp_sql = f'schema--table--sql: {user}--dba_objects-- {sql}'
+            db_objects.append((res, tmp_sql))
+
     file_name1 = '2.数据库对象及个数.csv'
     write_csv(file_name1, db_objects)
 
@@ -152,15 +184,19 @@ def get_table_statistic():
     SELECT table_name "表名",num_rows "行数" FROM dba_tables WHERE OWNER='SYS'and num_rows is not null order by num_rows desc
     :return:
     """
-    users = get_databases()
-    db_tables = []
-    for user in users:
-        sql = f'''SELECT table_name ,num_rows  FROM dba_tables WHERE OWNER='{user}'and num_rows is not null order by num_rows desc'''
-        res = pool.executor(sql)
-        tmp_sql = f'schema--table--sql: {user}--dba_tables-- {sql}'
-        db_tables.append((res, tmp_sql))
+
+    dba_sql = '''SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM dba_tables WHERE  owner IN (SELECT username FROM dba_users 
+                 WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  order by owner,num_rows desc'''
+    common_sql = '''SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM all_tables 
+             WHERE  owner IN (SELECT username FROM all_users where username !='SYS' and username !='SYSTEM' ) and num_rows is not null order by owner,num_rows desc'''
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: --dba_tables-- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: --dba_tables-- {common_sql}'
     file_name1 = '3.表及行数.csv'
-    write_csv(file_name1, db_tables)
+    write_csv(file_name1, [(data, temp_sql)])
 
 
 def get_schema_space():
@@ -170,12 +206,20 @@ SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segmen
        WHERE SEGMENT_TYPE LIKE 'TABLE%' GROUP BY OWNER ORDER BY round(sum(bytes)/1024/1024,2) desc;
     :return:
     """
-    sql = """
+    dba_sql = """
     SELECT OWNER as "用户/模式", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM dba_segments
        WHERE SEGMENT_TYPE LIKE 'TABLE%' GROUP BY OWNER ORDER BY round(sum(bytes)/1024/1024,2) desc
     """
-    data = pool.executor(sql)
-    temp_sql = f'schema--table--sql: --dba_segments-- {sql}'
+    common_sql = '''
+        SELECT '当前用户/模式' "type", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM user_segments
+	    WHERE SEGMENT_TYPE LIKE 'TABLE%'  ORDER BY round(sum(bytes)/1024/1024,2) desc
+	 '''
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: --dba_segments-- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: --dba_segments-- {common_sql}'
     write_csv('4.每个模式的大小.csv', [(data, temp_sql)])
 
 
@@ -184,37 +228,52 @@ def get_table_space():
     获取用户模式下的表大小
     :return:
     """
-    sql = """
+    dba_sql = """
     SELECT OWNER as "模式", segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
     FROM dba_segments
     WHERE SEGMENT_NAME NOT LIKE 'BIN$%' and  SEGMENT_TYPE LIKE 'TABLE%' 
     AND OWNER NOT IN ('SYS', 'SYSTEM', 'OUTLN', 'DBSNMP', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'XDB', 'CTXSYS', 'ORDDATA', 'ORDPLUGINS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS', 'FLOWS_FILES', 'APEX_040200', 'APEX_PUBLIC_USER')
     GROUP BY OWNER ,segment_name order by owner, round(sum(bytes)/1024/1024,2) desc
     """
-    data = pool.executor(sql)
-    temp_sql = f'schema--table--sql: --dba_segments-- {sql}'
+    common_sql = '''
+    SELECT  segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
+    FROM user_segments
+    WHERE SEGMENT_NAME NOT LIKE 'BIN$%' and  SEGMENT_TYPE LIKE 'TABLE%'  group by segment_name
+    order by  round(sum(bytes)/1024/1024,2) desc
+    '''
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: --dba_segments-- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: --user_segments-- {common_sql}'
+
     write_csv('9.每张表大小.csv', [(data, temp_sql)])
 
 
 def get_table_column():
     """
     -- 5、查看数据库表对象使用的列名称(关键字排查)
-SQL> SELECT  column_name FROM dba_tab_columns WHERE owner='USER'
+    SQL> SELECT  column_name FROM dba_tab_columns WHERE owner='USER'
      GROUP BY column_name ORDER BY column_name desc;
     :return:
     """
-    sql = """
-    
-    """
-    users = get_databases()
-    columns = []
-    for user in users:
-        sql = f"""SELECT  column_name FROM dba_tab_columns WHERE owner='{user}'
-                    GROUP BY column_name ORDER BY column_name """
-        data = pool.executor(sql)
-        temp_sql = f'schema--table--sql: --dba_tab_columns-- {sql}'
-        columns.append((data, temp_sql))
-    write_csv('5.表列名.csv', columns)
+    dba_sql = '''
+    SELECT distinct column_name FROM dba_tab_columns WHERE owner in (SELECT username FROM dba_users 
+    WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  ORDER BY column_name
+    '''
+    common_sql = '''
+    SELECT distinct column_name FROM all_tab_columns WHERE owner in (SELECT username FROM all_users 
+    WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))  ORDER BY column_name
+    '''
+
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: --dba_tab_columns-- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: --all_tab_columns-- {common_sql}'
+    write_csv('5.表列名.csv', [(data, temp_sql)])
 
 
 def get_table_column_type():
@@ -223,14 +282,23 @@ def get_table_column_type():
     SQL> SELECT  DATA_TYPE,count(*) FROM dba_tab_columns WHERE OWNER='USER' GROUP BY DATA_TYPE ORDER BY  COUNT(*) desc;
     :return:
     """
-    users = get_databases()
-    column_types = []
-    for user in users:
-        sql = f'''SELECT  DATA_TYPE,count(*) AS num FROM dba_tab_columns WHERE OWNER='{user}' GROUP BY DATA_TYPE ORDER BY num desc'''
-        data = pool.executor(sql)
-        temp_sql = f'schema--table--sql: --dba_tab_columns-- {sql}'
-        column_types.append((data, temp_sql))
-    write_csv('6.表列字段类型及数量.csv', column_types)
+    dba_sql = """
+    SELECT  DATA_TYPE "数据类型",count(*) "个数" FROM dba_tab_columns WHERE owner in (SELECT username FROM dba_users 
+    WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  GROUP BY DATA_TYPE ORDER BY count(*) desc
+    """
+    common_sql = """
+    SELECT  DATA_TYPE "数据类型",count(*) "个数" FROM all_tab_columns WHERE  owner in (SELECT username FROM all_users 
+    WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))   GROUP BY DATA_TYPE ORDER BY count(*) desc
+
+    """
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: --dba_tab_columns-- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: --all_tab_columns-- {common_sql}'
+
+    write_csv('6.表列字段类型及数量.csv', [(data, temp_sql)])
 
 
 def get_constraint():
@@ -255,32 +323,55 @@ def get_constraint():
            ORDER BY c.OWNER;
         :return:
     """
-    sql = '''
+    dba_sql = """
     SELECT  c.OWNER AS 约束拥有者,
             c.CONSTRAINT_name AS 约束名称,
             c.TABLE_NAME AS 表名,
             cc.COLUMN_NAME AS 列名,
             c.R_OWNER AS 外键表拥有者,
             d.TABLE_NAME AS 外键表名,
-            dd.COLUMN_NAME AS 外键表列名,
+            cc.COLUMN_NAME AS 外键表列名,
             c.DELETE_RULE AS 约束删除规则,
             c.R_CONSTRAINT_NAME AS 唯一约束名称,
             c.CONSTRAINT_TYPE AS 约束类型,
             c.STATUS AS 约束状态
-     FROM dba_constraints c LEFT JOIN DBA_CONS_COLUMNS cc ON c.OWNER=cc.OWNER AND c.CONSTRAINT_NAME=cc.CONSTRAINT_NAME
+     FROM dba_constraints c 
+     LEFT JOIN dba_cons_columns cc ON c.OWNER=cc.OWNER AND c.CONSTRAINT_NAME=cc.CONSTRAINT_NAME
      LEFT JOIN dba_constraints d  ON c.R_OWNER=d.OWNER AND c.R_CONSTRAINT_NAME=d.CONSTRAINT_NAME
-     LEFT JOIN DBA_CONS_COLUMNS dd ON d.OWNER=dd.OWNER AND d.CONSTRAINT_NAME=dd.CONSTRAINT_NAME
      WHERE c.OWNER IN (
-     SELECT username FROM dba_users WHERE created>=(SELECT created FROM v$database) AND username!='HR')
-   ORDER BY c.OWNER
-    '''
-    data = pool.executor(sql)
-    temp_sql = f'schema--table--sql: -- -- {sql}'
+      SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN' and created>=(SELECT created FROM v$database) AND username!='HR')
+    ORDER BY c.OWNER
+    """
+    common_sql = """
+    SELECT  c.OWNER AS 约束拥有者,
+            c.CONSTRAINT_name AS 约束名称,
+            c.TABLE_NAME AS 表名,
+            cc.COLUMN_NAME AS 列名,
+            c.R_OWNER AS 外键表拥有者,
+            d.TABLE_NAME AS 外键表名,
+            cc.COLUMN_NAME AS 外键表列名,
+            c.DELETE_RULE AS 约束删除规则,
+            c.R_CONSTRAINT_NAME AS 唯一约束名称,
+            c.CONSTRAINT_TYPE AS 约束类型,
+            c.STATUS AS 约束状态
+     FROM all_constraints c 
+     LEFT JOIN all_cons_columns cc ON c.OWNER=cc.OWNER AND c.CONSTRAINT_NAME=cc.CONSTRAINT_NAME
+     LEFT JOIN all_constraints d  ON c.R_OWNER=d.OWNER AND c.R_CONSTRAINT_NAME=d.CONSTRAINT_NAME
+     WHERE c.OWNER IN (
+     SELECT username FROM all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))
+    ORDER BY c.OWNER
+    """
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: -- -- {dba_sql}'
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: -- -- {common_sql}'
     write_csv('7.每个用户模式下的表约束.csv', [(data, temp_sql)])
 
 
 def sumary():
-    sql = """
+    dba_sql = """
     SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
     UNION ALL
     SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM dba_users
@@ -311,10 +402,47 @@ def sumary():
     UNION ALL
     SELECT 'session时区' type,SESSIONTIMEZONE cnt FROM dual
     """
-    data = pool.executor(sql)
-    temp_sql = f'schema--table--sql: -- -- {sql}'
-    for i in data:
-        print(f"{i.get('TYPE')}: {i.get('CNT')}")
+    common_sql = """
+    SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
+    UNION ALL
+    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM all_users  WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    select '用户' type ,TO_CHAR(count(*)) cnt from all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    select '表' type,to_char(count(*)) cnt  from all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM all_scheduler_jobs where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'FUNCTION' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'PROCEDURE' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM all_triggers where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM all_views where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '索引' type ,TO_CHAR(count(*))  FROM all_indexes where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '总表空间大小' type, SUM(bytes) / (1024 * 1024) || 'MB' AS size_mb FROM user_segments
+    UNION ALL
+    SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT '分区表' type ,TO_CHAR(count(*)) FROM all_part_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    UNION ALL
+    SELECT 'DB时区' type,DBTIMEZONE cnt FROM dual
+    UNION ALL
+    SELECT 'session时区' type,SESSIONTIMEZONE cnt FROM dual
+    """
+    if check_dba_privelege():
+        data = pool.executor(dba_sql)
+        temp_sql = f'schema--table--sql: -- -- {dba_sql}'
+        for i in data:
+            print(f"{i.get('TYPE')}: {i.get('CNT')}")
+    else:
+        data = pool.executor(common_sql)
+        temp_sql = f'schema--table--sql: -- -- {common_sql}'
+        for i in data:
+            print(f"{i.get('TYPE')}: {i.get('CNT')}")
     write_csv('8.概要信息.csv', [(data, temp_sql)])
 
 
@@ -393,12 +521,14 @@ def parse_args():
 if __name__ == "__main__":
     # pre_user = 'sys'
     # pre_password = 'rootroot'
-    # user = "u1"
-    # password = "123456"
-    # dsn = '192.168.2.217:1521/ORCL'
+    host = '10.28.23.225'
+    port = 1521
+    user = "jack"
+    password = "123456"
+    dsn = '10.28.23.225:1521/ORCL'
 
     # sql2 = 'select * from "SCOTT"."SALGRADE"'
-    host, port, user, password, dsn = parse_args()
+    # host, port, user, password, dsn = parse_args()
     pool = OracleConnectionPool(user, password, dsn)
     timestands = time.strftime('%Y-%m-%d-%H%M%S', time.localtime())
     dir = f'oracle_result_{timestands}'
@@ -406,6 +536,7 @@ if __name__ == "__main__":
     print(dir)
     start = time.time()
     # main(task_names)
+    check_dba_privelege()
     get_charset()
     get_objects_count()
     get_table_statistic()

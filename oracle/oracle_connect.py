@@ -41,10 +41,15 @@ class OracleConnectionPool:
             self.pool.close()
 
     def executor(self, sql):
-        # todo 需要打印报错sql
         conn = self.get_connection()
         with conn.cursor() as cursor:
-            cursor.execute(sql)
+            try:
+                cursor.execute(sql)
+            except Exception as e:
+                conn.rollback()
+                print(f'执行异常:{sql},{e}')
+                self.release_connection(conn)
+                return None
             column_names = [desc[0] for desc in cursor.description]
             results = [dict(zip(column_names, row)) for row in cursor.fetchall()]
         conn.commit()
@@ -149,12 +154,12 @@ SQL>  select object_type,count(*) from all_objects where owner='USER' group by o
         users = [v for i in users for _, v in i.items()]
         db_objects = []
         for user in users:
-            sql = f"""select object_type "对象类型",count(*) "个数" from dba_objects where owner='{user}' group by object_type"""
+            sql = f"""select object_type "对象类型",count(*) "个数" from dba_objects where owner='{user}' group by object_type order by count(*) desc """
             res = pool.executor(sql)
             tmp_sql = f'schema--table--sql: {user}--dba_objects-- {sql}'
             db_objects.append((res, tmp_sql))
     else:
-        sql_user = 'SELECT username FROM all_users '
+        sql_user = "SELECT username FROM all_users  WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')"
         users = pool.executor(sql_user)
         users = [v for i in users for _, v in i.items() if v not in EXCEPT_USERS]
         db_objects = []
@@ -185,10 +190,15 @@ def get_table_statistic():
     :return:
     """
 
-    dba_sql = '''SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM dba_tables WHERE  owner IN (SELECT username FROM dba_users 
-                 WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  order by owner,num_rows desc'''
-    common_sql = '''SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM all_tables 
-             WHERE  owner IN (SELECT username FROM all_users where username !='SYS' and username !='SYSTEM' ) and num_rows is not null order by owner,num_rows desc'''
+    dba_sql = '''
+    SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM dba_tables WHERE  owner IN (SELECT username FROM dba_users 
+    WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  order by owner,num_rows desc
+    '''
+    common_sql = '''
+    SELECT owner "模式名" ,table_name "表名",num_rows "行数" FROM all_tables 
+    WHERE  owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
+    and num_rows is not null order by owner,num_rows desc
+    '''
     if check_dba_privelege():
         data = pool.executor(dba_sql)
         temp_sql = f'schema--table--sql: --dba_tables-- {dba_sql}'
@@ -207,8 +217,8 @@ SELECT OWNER, concat(round(sum(bytes)/1024/1024,2),'MB') AS data FROM dba_segmen
     :return:
     """
     dba_sql = """
-    SELECT OWNER as "用户/模式", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM dba_segments
-       WHERE SEGMENT_TYPE LIKE 'TABLE%' GROUP BY OWNER ORDER BY round(sum(bytes)/1024/1024,2) desc
+    SELECT OWNER as "用户/模式", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM dba_segments WHERE  owner IN (SELECT username FROM dba_users 
+      WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN') and SEGMENT_TYPE LIKE 'TABLE%' GROUP BY OWNER ORDER BY round(sum(bytes)/1024/1024,2) desc
     """
     common_sql = '''
         SELECT '当前用户/模式' "type", concat(round(sum(bytes)/1024/1024,2),'MB') AS "大小" FROM user_segments
@@ -232,11 +242,11 @@ def get_table_space():
     SELECT OWNER as "模式", segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
     FROM dba_segments
     WHERE SEGMENT_NAME NOT LIKE 'BIN$%' and  SEGMENT_TYPE LIKE 'TABLE%' 
-    AND OWNER NOT IN ('SYS', 'SYSTEM', 'OUTLN', 'DBSNMP', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'XDB', 'CTXSYS', 'ORDDATA', 'ORDPLUGINS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS', 'FLOWS_FILES', 'APEX_040200', 'APEX_PUBLIC_USER')
+    AND OWNER  IN (SELECT username FROM dba_users  WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     GROUP BY OWNER ,segment_name order by owner, round(sum(bytes)/1024/1024,2) desc
     """
     common_sql = '''
-    SELECT  segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
+   	SELECT  segment_name as "表名",concat(round(sum(bytes)/1024/1024,2),'MB') as "表大小"
     FROM user_segments
     WHERE SEGMENT_NAME NOT LIKE 'BIN$%' and  SEGMENT_TYPE LIKE 'TABLE%'  group by segment_name
     order by  round(sum(bytes)/1024/1024,2) desc
@@ -264,7 +274,8 @@ def get_table_column():
     '''
     common_sql = '''
     SELECT distinct column_name FROM all_tab_columns WHERE owner in (SELECT username FROM all_users 
-    WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))  ORDER BY column_name
+    WHERE  username not in  ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS'))
+	ORDER BY column_name
     '''
 
     if check_dba_privelege():
@@ -287,9 +298,9 @@ def get_table_column_type():
     WHERE  username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')  GROUP BY DATA_TYPE ORDER BY count(*) desc
     """
     common_sql = """
-    SELECT  DATA_TYPE "数据类型",count(*) "个数" FROM all_tab_columns WHERE  owner in (SELECT username FROM all_users 
-    WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))   GROUP BY DATA_TYPE ORDER BY count(*) desc
-
+	SELECT  DATA_TYPE "数据类型",count(*) "个数" FROM all_tab_columns WHERE  owner in (SELECT username FROM all_users 
+    WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')) 
+    GROUP BY DATA_TYPE ORDER BY count(*) desc
     """
     if check_dba_privelege():
         data = pool.executor(dba_sql)
@@ -358,7 +369,7 @@ def get_constraint():
      LEFT JOIN all_cons_columns cc ON c.OWNER=cc.OWNER AND c.CONSTRAINT_NAME=cc.CONSTRAINT_NAME
      LEFT JOIN all_constraints d  ON c.R_OWNER=d.OWNER AND c.R_CONSTRAINT_NAME=d.CONSTRAINT_NAME
      WHERE c.OWNER IN (
-     SELECT username FROM all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS'))
+     SELECT username FROM all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS'))
     ORDER BY c.OWNER
     """
     if check_dba_privelege():
@@ -372,62 +383,75 @@ def get_constraint():
 
 def sumary():
     dba_sql = """
+
     SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
     UNION ALL
-    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM dba_users
+    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM dba_users 
+		 where username in (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
-    select '用户' type ,TO_CHAR(count(*)) cnt from dba_users
+    select '用户' type ,TO_CHAR(count(*)) cnt from dba_users 
+		 where username in (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
-    select '表' type,to_char(count(*)) cnt  from dba_tables 
+    select '表' type,to_char(count(*)) cnt  from dba_tables  
+		 where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM dba_scheduler_jobs
+				 where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'FUNCTION'
+						 and  owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM dba_objects WHERE object_type = 'PROCEDURE'
+						 and owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM dba_triggers
+								 where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM dba_views
+		where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '索引' type ,TO_CHAR(count(*))  FROM dba_indexes
+		where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '总表空间大小' type, SUM(bytes) / (1024 * 1024) || 'MB' AS size_mb FROM dba_segments
+		where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM dba_tables
+			 where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT '分区表' type ,TO_CHAR(count(*)) FROM dba_part_tables
+		where owner in  (SELECT username FROM dba_users WHERE username !='SYS' and  username !='SYSTEM' and account_status = 'OPEN')
     UNION ALL
     SELECT 'DB时区' type,DBTIMEZONE cnt FROM dual
     UNION ALL
     SELECT 'session时区' type,SESSIONTIMEZONE cnt FROM dual
     """
     common_sql = """
-    SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
+		    SELECT '数据库版本' type, banner AS cnt FROM v$version WHERE banner LIKE 'Oracle%'
     UNION ALL
-    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM all_users  WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '用户模式' type, to_char(COUNT(*)) AS cnt FROM all_users  WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    select '用户' type ,TO_CHAR(count(*)) cnt from all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    select '用户' type ,TO_CHAR(count(*)) cnt from all_users WHERE  username not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    select '表' type,to_char(count(*)) cnt  from all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    select '表' type,to_char(count(*)) cnt  from all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM all_scheduler_jobs where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '定时作业' type ,TO_CHAR(count(*)) cnt FROM all_scheduler_jobs where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'FUNCTION' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '函数' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'FUNCTION' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'PROCEDURE' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '存储过程' type ,TO_CHAR(count(*)) cnt FROM all_objects WHERE object_type = 'PROCEDURE' and owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM all_triggers where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '触发器' type ,TO_CHAR(count(*)) cnt FROM all_triggers where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM all_views where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '视图' type ,TO_CHAR(count(*)) cnt  FROM all_views where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '索引' type ,TO_CHAR(count(*))  FROM all_indexes where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '索引' type ,TO_CHAR(count(*))  FROM all_indexes where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
     SELECT '总表空间大小' type, SUM(bytes) / (1024 * 1024) || 'MB' AS size_mb FROM user_segments
     UNION ALL
-    SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '所有表总行数' type ,TO_CHAR(sum(num_rows)) cnt FROM all_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
-    SELECT '分区表' type ,TO_CHAR(count(*)) FROM all_part_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM', 'DBSNMP', 'APPQOSSYS', 'WMSYS')
+    SELECT '分区表' type ,TO_CHAR(count(*)) FROM all_part_tables where owner not in ('SYS', 'SYSTEM', 'OUTLN', 'DIP', 'ORACLE_OCM','DBSNMP','APPQOSSYS', 'ORDSYS', 'EXFSYS', 'WMSYS', 'CTXSYS', 'ANONYMOUS', 'CTXSYS', 'MDSYS', 'LBACSYS', 'DMSYS', 'TSMSYS', 'OLAPSYS')
     UNION ALL
     SELECT 'DB时区' type,DBTIMEZONE cnt FROM dual
     UNION ALL
@@ -523,8 +547,8 @@ if __name__ == "__main__":
     # pre_password = 'rootroot'
     host = '10.28.23.225'
     port = 1521
-    user = "jack"
-    password = "123456"
+    user = "test"
+    password = "test"
     dsn = '10.28.23.225:1521/ORCL'
 
     # sql2 = 'select * from "SCOTT"."SALGRADE"'

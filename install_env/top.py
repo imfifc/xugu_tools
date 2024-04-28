@@ -63,8 +63,9 @@ def get_top_cpu_process(duration=1):
             continue
         except psutil.AccessDenied:
             continue
-
-        # time.sleep(0.1)
+        except Exception as e:
+            print(e)
+            continue
 
     # print(process_info)
     top_processs = sorted(process_info.items(), key=lambda x: x[1]['cpu'], reverse=True)[:4]
